@@ -588,7 +588,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      * handling of structural calls. It's not what's intended here.
      */
     class Leading extends AbstractIterator[A] {
-      private[this] var lookahead: mutable.Queue[A] = null
+      private[this] var lookahead: mutable.Queue[A] = _
       private[this] var hd: A = _
       /* Status is kept with magic numbers
        *   1 means next element is in hd and we're still reading into this iterator
@@ -659,7 +659,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
           }
           else {
             status = 1
-            myLeading = null
+	    // Not sure why needed
+            // myLeading = null
             self.hasNext
           }
         }
@@ -670,7 +671,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
           else {
             status = 1
             val ans = myLeading.trailer
-            myLeading = null
+	    // Not sure why needed
+            // myLeading = null
             ans
           }
         }
@@ -937,9 +939,9 @@ object Iterator extends IterableFactory[Iterator] {
   /** Creates an iterator to which other iterators can be appended efficiently.
     *  Nested ConcatIterators are merged to avoid blowing the stack.
     */
-  private final class ConcatIterator[+A](private var current: Iterator[A @uncheckedVariance]) extends AbstractIterator[A] {
-    private var tail: ConcatIteratorCell[A @uncheckedVariance] = null
-    private var last: ConcatIteratorCell[A @uncheckedVariance] = null
+  private final class ConcatIterator[+A](private var current: Iterator[A @uncheckedVariance] | Null) extends AbstractIterator[A] {
+    private var tail: ConcatIteratorCell[A @uncheckedVariance] | Null = null
+    private var last: ConcatIteratorCell[A @uncheckedVariance] | Null = null
     private var currentHasNextChecked = false
 
     // Advance current to the next non-empty iterator
