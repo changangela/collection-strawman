@@ -2,7 +2,7 @@ package strawman.collection
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.{Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
+import scala.{Null, Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
 import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
 
@@ -642,7 +642,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     val leading = new Leading
 
     val trailing = new AbstractIterator[A] {
-      private[this] var myLeading = leading
+      private[this] var myLeading: Leading | Null = leading
       /* Status flag meanings:
        *   -1 not yet accessed
        *   0 single element waiting in leading
@@ -653,14 +653,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         if (status > 0) self.hasNext
         else {
           if (status == 0) true
-          else if (myLeading.finish()) {
+          else if (myLeading.nn().finish()) {
             status = 0
             true
           }
           else {
             status = 1
-	    // Not sure why needed
-            // myLeading = null
+            myLeading = null
             self.hasNext
           }
         }
@@ -669,10 +668,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         if (hasNext) {
           if (status > 0) self.next()
           else {
+            val ans = myLeading.nn().trailer
             status = 1
-            val ans = myLeading.trailer
-	    // Not sure why needed
-            // myLeading = null
+            myLeading = null
             ans
           }
         }
