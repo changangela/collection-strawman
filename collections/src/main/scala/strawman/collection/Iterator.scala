@@ -3,6 +3,7 @@ package strawman.collection
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Null, Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
+import scala.NonNull._
 import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
 
@@ -653,7 +654,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         if (status > 0) self.hasNext
         else {
           if (status == 0) true
-          else if (myLeading.nn().finish()) {
+          else if (myLeading.nn.finish()) {
             status = 0
             true
           }
@@ -668,7 +669,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         if (hasNext) {
           if (status > 0) self.next()
           else {
-            val ans = myLeading.nn().trailer
+            val ans = myLeading.nn.trailer
             status = 1
             myLeading = null
             ans
@@ -952,11 +953,11 @@ object Iterator extends IterableFactory[Iterator] {
         false
       }
       else {
-        current = tail.headIterator
-        tail = tail.tail
+        current = tail.nn.headIterator
+        tail = tail.nn.tail
         merge()
         if (currentHasNextChecked) true
-        else if (current.hasNext) {
+        else if (current.nn.hasNext) {
           currentHasNextChecked = true
           true
         } else advance()
@@ -971,7 +972,7 @@ object Iterator extends IterableFactory[Iterator] {
       current = c.current
       currentHasNextChecked = c.currentHasNextChecked
       if (c.tail ne null) {
-        c.last.tail = tail
+        c.last.nn.tail = tail
         tail = c.tail
       }
       merge()
@@ -980,7 +981,7 @@ object Iterator extends IterableFactory[Iterator] {
     def hasNext =
       if (currentHasNextChecked) true
       else if (current eq null) false
-      else if (current.hasNext) {
+      else if (current.nn.hasNext) {
         currentHasNextChecked = true
         true
       } else advance()
@@ -988,7 +989,7 @@ object Iterator extends IterableFactory[Iterator] {
     def next()  =
       if (hasNext) {
         currentHasNextChecked = false
-        current.next()
+        current.nn.next()
       } else Iterator.empty.next()
 
     override def concat[B >: A](that: => IterableOnce[B]): Iterator[B] = {
@@ -997,7 +998,7 @@ object Iterator extends IterableFactory[Iterator] {
         tail = c
         last = c
       } else {
-        last.tail = c
+        last.nn.tail = c
         last = c
       }
       if(current eq null) current = Iterator.empty
@@ -1005,7 +1006,7 @@ object Iterator extends IterableFactory[Iterator] {
     }
   }
 
-  private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A]) {
+  private[this] final class ConcatIteratorCell[A](head: => IterableOnce[A], var tail: ConcatIteratorCell[A] | Null) {
     def headIterator: Iterator[A] = head.iterator()
   }
 
