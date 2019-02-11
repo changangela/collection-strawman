@@ -1,6 +1,6 @@
 package strawman.collection
 
-import scala.{AnyVal, Boolean, Int, StringContext, Unit}
+import scala.{Null, AnyVal, Boolean, Int, StringContext, Unit}
 import scala.language.implicitConversions
 import scala.Predef.intWrapper
 
@@ -73,7 +73,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
       def iterator() = new Iterator[(El1, El2)] {
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
-        private var _current: (El1, El2) = _
+        private var _current: (El1, El2) | Null = _
         private def current = {
           while ((_current eq null) && elems1.hasNext && elems2.hasNext) {
             val e1 = elems1.next()
@@ -183,7 +183,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
         private val elems1 = coll1.iterator()
         private val elems2 = coll2.iterator()
         private val elems3 = coll3.iterator()
-        private var _current: (El1, El2, El3) = _
+        private var _current: (El1, El2, El3) | Null = _
         private def current = {
           while ((_current eq null) && elems1.hasNext && elems2.hasNext && elems3.hasNext) {
             val e1 = elems1.next()
@@ -294,7 +294,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
         private val elems2 = coll2.iterator()
         private val elems3 = coll3.iterator()
         private val elems4 = coll4.iterator()
-        private var _current: (El1, El2, El3, El4) = _
+        private var _current: (El1, El2, El3, El4) | Null = _
         private def current = {
           while ((_current eq null) && elems1.hasNext && elems2.hasNext && elems3.hasNext && elems4.hasNext) {
             val e1 = elems1.next()
