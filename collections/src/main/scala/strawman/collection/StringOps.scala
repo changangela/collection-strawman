@@ -249,9 +249,8 @@ final class StringOps(private val s: String)
    * If the first character of the string is capitalized, it is returned unchanged.
    * This method does not convert characters outside the Basic Multilingual Plane (BMP).
    */
-  def capitalize: String | Null =
-    if (toString == null) null
-    else if (toString.length == 0) ""
+  def capitalize: String =
+    if (toString.length == 0) ""
     else if (toString.charAt(0).isUpper) toString
     else {
       val chars = toString.toCharArray
@@ -439,7 +438,7 @@ final class StringOps(private val s: String)
 
   private def unwrapArg(arg: Any): AnyRef | Null = arg match {
     case null => null
-    case x: ScalaNumber => x.nn.underlying
+    case x: ScalaNumber => x.underlying
     case x              => x.nn.asInstanceOf[AnyRef]
   }
 
@@ -456,8 +455,8 @@ final class StringOps(private val s: String)
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def format(args : Any*): String | Null =
-    java.lang.String.format(toString, args map unwrapArg: _*)
+  def format(args : Any*): String =
+    java.lang.String.format(toString, args map unwrapArg: _*).nn
 
   /** Like `format(args*)` but takes an initial `Locale` parameter
    *  which influences formatting as in `java.lang.String`'s format.
@@ -472,8 +471,8 @@ final class StringOps(private val s: String)
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def formatLocal(l: java.util.Locale, args: Any*): String | Null =
-    java.lang.String.format(l, toString, args map unwrapArg: _*)
+  def formatLocal(l: java.util.Locale, args: Any*): String =
+    java.lang.String.format(l, toString, args map unwrapArg: _*).nn
 }
 
 case class StringView(s: String) extends IndexedView[Char] {
