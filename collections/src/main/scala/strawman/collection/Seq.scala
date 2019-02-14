@@ -595,7 +595,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       val arr = new Array[AnyRef | Null](len)  // Previously used ArraySeq for more compact but slower code
       var i = 0
       for (x <- this) {
-        arr(i) = x.asInstanceOf[AnyRef | Null]
+        arr(i) = x.asInstanceOf[AnyRef]
         i += 1
       }
       java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
