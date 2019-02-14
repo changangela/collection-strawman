@@ -1,6 +1,9 @@
 package strawman
 package collection
 
+import scala.Null
+import scala.ExplicitNulls._
+
 import scala.{Array, Char, `inline`, Int, StringIndexOutOfBoundsException, AnyVal, throws, AnyRef, Boolean, Double, Float, Long, Short, Any, Byte}
 import scala.Predef.{String, intWrapper, charWrapper, classOf}
 import java.lang.IllegalArgumentException
@@ -246,7 +249,7 @@ final class StringOps(private val s: String)
    * If the first character of the string is capitalized, it is returned unchanged.
    * This method does not convert characters outside the Basic Multilingual Plane (BMP).
    */
-  def capitalize: String =
+  def capitalize: String | Null =
     if (toString == null) null
     else if (toString.length == 0) ""
     else if (toString.charAt(0).isUpper) toString
@@ -434,9 +437,10 @@ final class StringOps(private val s: String)
   override def toArray[B >: Char : ClassTag]: Array[B] =
     toString.toCharArray.asInstanceOf[Array[B]]
 
-  private def unwrapArg(arg: Any): AnyRef = arg match {
-    case x: ScalaNumber => x.underlying
-    case x              => x.asInstanceOf[AnyRef]
+  private def unwrapArg(arg: Any): AnyRef | Null = arg match {
+    case null => null
+    case x: ScalaNumber => x.nn.underlying
+    case x              => x.nn.asInstanceOf[AnyRef]
   }
 
   /** Uses the underlying string as a pattern (in a fashion similar to
@@ -452,7 +456,7 @@ final class StringOps(private val s: String)
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def format(args : Any*): String =
+  def format(args : Any*): String | Null =
     java.lang.String.format(toString, args map unwrapArg: _*)
 
   /** Like `format(args*)` but takes an initial `Locale` parameter
@@ -468,7 +472,7 @@ final class StringOps(private val s: String)
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def formatLocal(l: java.util.Locale, args: Any*): String =
+  def formatLocal(l: java.util.Locale, args: Any*): String | Null =
     java.lang.String.format(l, toString, args map unwrapArg: _*)
 }
 
