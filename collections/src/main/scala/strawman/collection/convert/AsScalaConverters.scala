@@ -31,7 +31,6 @@ trait AsScalaConverters {
    * @return  A Scala `Iterator` view of the argument.
    */
   def asScalaIterator[A](i: ju.Iterator[A]): Iterator[A] = i match {
-    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JIteratorWrapper(i)
   }
@@ -50,7 +49,6 @@ trait AsScalaConverters {
    * @return  A Scala `Iterator` view of the argument.
    */
   def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A] = i match {
-    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JEnumerationWrapper(i)
   }
@@ -69,7 +67,6 @@ trait AsScalaConverters {
    * @return  A Scala `Iterable` view of the argument.
    */
   def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A] = i match {
-    case null                     => null
     case IterableWrapper(wrapped) => wrapped
     case _                        => JIterableWrapper(i)
   }
@@ -85,7 +82,6 @@ trait AsScalaConverters {
    * @return  A Scala `Iterable` view of the argument.
    */
   def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A] = i match {
-    case null                     => null
     case IterableWrapper(wrapped) => wrapped
     case _                        => JCollectionWrapper(i)
   }
@@ -104,7 +100,6 @@ trait AsScalaConverters {
    * @return A Scala mutable `Buffer` view of the argument.
    */
   def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A] = l match {
-    case null                           => null
     case MutableBufferWrapper(wrapped)  => wrapped
     case _                              => new JListWrapper(l)
   }
@@ -123,7 +118,6 @@ trait AsScalaConverters {
    * @return  A Scala mutable `Set` view of the argument.
    */
   def asScalaSet[A](s: ju.Set[A]): mutable.Set[A] = s match {
-    case null                       => null
     case MutableSetWrapper(wrapped) => wrapped
     case _                          => new JSetWrapper(s)
   }
@@ -147,7 +141,6 @@ trait AsScalaConverters {
    * @return  A Scala mutable `Map` view of the argument.
    */
   def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = m match {
-    case null                       => null
     case MutableMapWrapper(wrapped) => wrapped
     case _                          => new JMapWrapper(m)
   }
@@ -167,7 +160,6 @@ trait AsScalaConverters {
    * @return  A Scala mutable `ConcurrentMap` view of the argument.
    */
   def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
-    case null                             => null
     case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
@@ -186,7 +178,6 @@ trait AsScalaConverters {
    * @return  A Scala mutable `Map` view of the argument.
    */
   def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
-    case null                       => null
     case DictionaryWrapper(wrapped) => wrapped
     case _                          => new JDictionaryWrapper(p)
   }
@@ -202,7 +193,6 @@ trait AsScalaConverters {
    * @return  A Scala mutable `Map[String, String]` view of the argument.
    */
   def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = p match {
-    case null => null
     case _    => new JPropertiesWrapper(p)
   }
 }
