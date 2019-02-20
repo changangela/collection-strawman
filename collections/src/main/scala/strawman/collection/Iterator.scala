@@ -3,7 +3,8 @@ package strawman.collection
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 import scala.{Null, Any, AnyRef, Array, Boolean, IllegalArgumentException, Int, NoSuchElementException, None, Nothing, Numeric, Option, Ordering, PartialFunction, Some, StringContext, Unit, UnsupportedOperationException, `inline`, math, throws}
-import scala.NonNull._
+import scala.ExplicitNulls._
+
 import scala.Predef.{identity, intWrapper, require, String}
 import strawman.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
 
