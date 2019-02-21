@@ -7,6 +7,7 @@ import mutable.{Builder, GrowableBuilder}
 
 import scala.{Array, Boolean, Int, Long, Ordering, SerialVersionUID, Serializable, Unit}
 import scala.Predef.require
+import scala.ExplicitNulls._
 
 /** A class for immutable bitsets.
   *  $bitsetinfo
@@ -79,7 +80,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     else if (len == 2) createSmall(elems(0), elems(1))
     else {
       val a = java.util.Arrays.copyOf(elems, len)
-      new BitSetN(a)
+      new BitSetN(a.nn)
     }
   }
 
