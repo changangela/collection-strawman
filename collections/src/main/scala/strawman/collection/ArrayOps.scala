@@ -2,7 +2,7 @@ package strawman
 package collection
 
 import scala.Null
-import scala.ExplicitNulls._
+import scala.ExplicitNulls.NonNull
 
 import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef, Double, Long, Float, Byte, Short}
 import scala.Predef.{implicitly, classOf, identity}
