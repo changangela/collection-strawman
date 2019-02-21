@@ -7,7 +7,7 @@ import mutable.{Builder, GrowableBuilder}
 
 import scala.{Array, Boolean, Int, Long, Ordering, SerialVersionUID, Serializable, Unit}
 import scala.Predef.require
-import scala.ExplicitNulls._
+import scala.ExplicitNulls.NonNull
 
 /** A class for immutable bitsets.
   *  $bitsetinfo
