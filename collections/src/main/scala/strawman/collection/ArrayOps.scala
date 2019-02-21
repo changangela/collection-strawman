@@ -1,6 +1,9 @@
 package strawman
 package collection
 
+import scala.Null
+import scala.ExplicitNulls._
+
 import scala.{AnyVal, Array, Char, Int, throws, Boolean, Serializable, Unit, `inline`, Option, Some, None, PartialFunction, ArrayIndexOutOfBoundsException, NoSuchElementException, AnyRef, Double, Long, Float, Byte, Short}
 import scala.Predef.{implicitly, classOf, identity}
 import java.lang.{String, Class}
@@ -21,7 +24,7 @@ object ArrayOps {
     * @see `java.util.Arrays#copyOf`
     */
   def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
-    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[AnyRef | Null]     => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
@@ -54,7 +57,7 @@ object ArrayOps {
     val destClass = ct.runtimeClass
     if (destClass.isAssignableFrom(original.getClass)) {
       if(destClass.getComponentType.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
+      else java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef | Null]], newLength, destClass.asInstanceOf[Class[Array[AnyRef]]]).asInstanceOf[Array[A]]
     } else {
       val dest = new Array[A](newLength)
       Array.copy(original, 0, dest, 0, original.length)
@@ -65,7 +68,7 @@ object ArrayOps {
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter[A](p: A => Boolean, xs: Array[A]) {
 
-    private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
+    private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType.nn)
 
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
@@ -178,7 +181,7 @@ object ArrayOps {
   */
 final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
-  private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
+  private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType.nn)
 
   /** The size of this array.
     *
@@ -244,7 +247,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val len = hi - lo
     if(len > 0) {
       ((xs: Array[_]) match {
-        case x: Array[AnyRef]     => java.util.Arrays.copyOfRange(x, lo, hi)
+        case x: Array[AnyRef | Null]     => java.util.Arrays.copyOfRange(x, lo, hi)
         case x: Array[Int]        => java.util.Arrays.copyOfRange(x, lo, hi)
         case x: Array[Double]     => java.util.Arrays.copyOfRange(x, lo, hi)
         case x: Array[Long]       => java.util.Arrays.copyOfRange(x, lo, hi)
@@ -393,13 +396,13 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val len = xs.length
     if(xs.getClass.getComponentType.isPrimitive && len > 1) {
       // need to copy into a boxed representation to use Java's Arrays.sort
-      val a = new Array[AnyRef](len)
+      val a = new Array[AnyRef | Null](len)
       var i = 0
       while(i < len) {
         a(i) = xs(i).asInstanceOf[AnyRef]
         i += 1
       }
-      java.util.Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]])
+      java.util.Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef | Null]])
       val res = new Array[A](len)
       i = 0
       while(i < len) {
@@ -410,7 +413,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     } else {
       val copy = slice(0, len)
       if(len > 1)
-        java.util.Arrays.sort(copy.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
+        java.util.Arrays.sort(copy.asInstanceOf[Array[AnyRef | Null]], ord.asInstanceOf[Ordering[AnyRef]])
       copy
     }
   }
@@ -818,11 +821,11 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return         An array obtained by replacing elements of this arrays with rows the represent.
     */
   def transpose[B](implicit asArray: A => Array[B]): Array[Array[B]] = {
-    val aClass = xs.getClass.getComponentType
+    val aClass = xs.getClass.getComponentType.nn
     val bb = new ArrayBuilder.ofRef[Array[B]]()(ClassTag[Array[B]](aClass))
     if (xs.length == 0) bb.result()
     else {
-      def mkRowBuilder() = ArrayBuilder.make[B]()(ClassTag[B](aClass.getComponentType))
+      def mkRowBuilder() = ArrayBuilder.make[B]()(ClassTag[B](aClass.getComponentType.nn))
       val bs = asArray(xs(0)) map ((x: B) => mkRowBuilder())
       var j = 0
       for (xs <- this) {
