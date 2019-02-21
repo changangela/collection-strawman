@@ -5,6 +5,9 @@ package immutable
 import mutable.{Builder, ImmutableBuilder}
 import Hashing.computeHash
 
+import scala.Null
+import scala.ExplicitNulls._
+
 import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, SerialVersionUID, Serializable, Some, Unit, `inline`, sys}
 import scala.Predef.{assert, intWrapper}
 import java.lang.{Integer, System}
@@ -91,7 +94,7 @@ sealed abstract class HashSet[A]
 
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
 
-  protected def removed0(key: A, hash: Int, level: Int): HashSet[A]
+  protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null
 
   protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
 
@@ -135,7 +138,7 @@ sealed abstract class HashSet[A]
     * @return The intersection of this and that at the given level. Unless level is zero, the result is not a
     *         self-contained HashSet but needs to be stored at the correct depth
     */
-  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null
 
   /**
     * Diff with another hash set at a given level
@@ -145,7 +148,7 @@ sealed abstract class HashSet[A]
     * @return The diff of this and that at the given level. Unless level is zero, the result is not a
     *         self-contained HashSet but needs to be stored at the correct depth
     */
-  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null
 
 }
 
@@ -201,11 +204,11 @@ object HashSet extends IterableFactory[HashSet] {
 
     protected def union0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = that
 
-    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
-    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
-    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
   }
 
@@ -294,7 +297,7 @@ object HashSet extends IterableFactory[HashSet] {
     protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
       if (that.get0(key, hash, level)) null else this
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null =
       if (negate ^ p(key)) this else null
   }
 
@@ -313,7 +316,7 @@ object HashSet extends IterableFactory[HashSet] {
       if (hash == this.hash) new HashSetCollision1(hash, ks + key)
       else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null =
       if (hash == this.hash) {
         val ks1 = ks - key
         ks1.size match {
@@ -347,7 +350,7 @@ object HashSet extends IterableFactory[HashSet] {
       //hash = computeHash(kvs.)
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = {
       val ks1 = if(negate) ks.filterNot(p) else ks.filter(p)
       ks1.size match {
         case 0 =>
@@ -498,7 +501,7 @@ object HashSet extends IterableFactory[HashSet] {
     * children:        ---b----------------a-----------
     */
   @SerialVersionUID(3L)
-  private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
+  private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A] | Null], private val size0: Int)
     extends HashSet[A] {
     assert(Integer.bitCount(bitmap) == elems.length)
     // assertion has to remain disabled until SI-6197 is solved
@@ -513,7 +516,7 @@ object HashSet extends IterableFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = {
       var i = 0
       while (i < elems.length) {
-        elems(i).foreach(f)
+        elems(i).nn.foreach(f)
         i += 1
       }
     }
@@ -522,10 +525,10 @@ object HashSet extends IterableFactory[HashSet] {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       if (bitmap == - 1) {
-        elems(index & 0x1f).get0(key, hash, level + 5)
+        elems(index & 0x1f).nn.get0(key, hash, level + 5)
       } else if ((bitmap & mask) != 0) {
         val offset = Integer.bitCount(bitmap & (mask-1))
-        elems(offset).get0(key, hash, level + 5)
+        elems(offset).nn.get0(key, hash, level + 5)
       } else
         false
     }
@@ -535,16 +538,16 @@ object HashSet extends IterableFactory[HashSet] {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
+        val sub = elems(offset).nn
         val subNew = sub.updated0(key, hash, level + 5)
         if (sub eq subNew) this
         else {
           val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
           elemsNew(offset) = subNew
-          new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
+          new HashTrieSet(bitmap, elemsNew.nn, size + (subNew.size - sub.size))
         }
       } else {
-        val elemsNew = new Array[HashSet[A]](elems.length + 1)
+        val elemsNew = new Array[HashSet[A] | Null](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
         elemsNew(offset) = new HashSet1(key, hash)
         Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
@@ -553,18 +556,18 @@ object HashSet extends IterableFactory[HashSet] {
       }
     }
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
+        val sub = elems(offset).nn
         val subNew = sub.removed0(key, hash, level + 5)
         if (sub eq subNew) this
         else if (subNew eq null) {
           val bitmapNew = bitmap ^ mask
           if (bitmapNew != 0) {
-            val elemsNew = new Array[HashSet[A]](elems.length - 1)
+            val elemsNew = new Array[HashSet[A] | Null](elems.length - 1)
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
@@ -579,7 +582,7 @@ object HashSet extends IterableFactory[HashSet] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieSet[_]]) {
           subNew
         } else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
+          val elemsNew = java.util.Arrays.copyOf(elems, elems.length).nn
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieSet(bitmap, elemsNew, sizeNew)
@@ -594,17 +597,17 @@ object HashSet extends IterableFactory[HashSet] {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
+        val sub = elems(offset).nn
         val sub1 = sub.union0(that, level + 5)
         if (sub eq sub1) this
         else {
-          val elems1 = new Array[HashSet[A]](elems.length)
+          val elems1 = new Array[HashSet[A] | Null](elems.length)
           Array.copy(elems, 0, elems1, 0, elems.length)
           elems1(offset) = sub1
           new HashTrieSet(bitmap, elems1, size + (sub1.size - sub.size))
         }
       } else {
-        val elems1 = new Array[HashSet[A]](elems.length + 1)
+        val elems1 = new Array[HashSet[A] | Null](elems.length + 1)
         Array.copy(elems, 0, elems1, 0, offset)
         elems1(offset) = that
         Array.copy(elems, offset, elems1, offset + 1, elems.length - offset)
@@ -644,7 +647,7 @@ object HashSet extends IterableFactory[HashSet] {
           // lowest remaining bit in bbm
           val blsb = bbm ^ (bbm & (bbm - 1))
           if (alsb == blsb) {
-            val sub1 = a(ai).union0(b(bi), level + 5, buffer, offset)
+            val sub1 = a(ai).nn.union0(b(bi).nn, level + 5, buffer, offset)
             rs += sub1.size
             buffer(offset) = sub1
             offset += 1
@@ -657,7 +660,7 @@ object HashSet extends IterableFactory[HashSet] {
           } else if (BitOperations.Int.unsignedCompare(alsb - 1, blsb - 1)) {
             // alsb is smaller than blsb, or alsb is set and blsb is 0
             // in any case, alsb is guaranteed to be set here!
-            val sub1 = a(ai)
+            val sub1 = a(ai).nn
             rs += sub1.size
             buffer(offset) = sub1
             offset += 1
@@ -667,7 +670,7 @@ object HashSet extends IterableFactory[HashSet] {
           } else {
             // blsb is smaller than alsb, or blsb is set and alsb is 0
             // in any case, blsb is guaranteed to be set here!
-            val sub1 = b(bi)
+            val sub1 = b(bi).nn
             rs += sub1.size
             buffer(offset) = sub1
             offset += 1
@@ -686,14 +689,14 @@ object HashSet extends IterableFactory[HashSet] {
           // we don't have to check whether the result is a leaf, since union will only make the set larger
           // and this is not a leaf to begin with.
           val length = offset - offset0
-          val elems = new Array[HashSet[A]](length)
+          val elems = new Array[HashSet[A] | Null](length)
           System.arraycopy(buffer, offset0, elems, 0, length)
           new HashTrieSet(this.bitmap | that.bitmap, elems, rs)
         }
       case _ => this
     }
 
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -731,7 +734,7 @@ object HashSet extends IterableFactory[HashSet] {
           // highest remaining bit in bbm
           val blsb = bbm ^ (bbm & (bbm - 1))
           if (alsb == blsb) {
-            val sub1 = a(ai).intersect0(b(bi), level + 5, buffer, offset)
+            val sub1 = a(ai).nn.intersect0(b(bi).nn, level + 5, buffer, offset)
             if (sub1 ne null) {
               rs += sub1.size
               rbm |= alsb
@@ -775,7 +778,7 @@ object HashSet extends IterableFactory[HashSet] {
           if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
             buffer(offset0)
           else {
-            val elems = new Array[HashSet[A]](length)
+            val elems = new Array[HashSet[A] | Null](length)
             System.arraycopy(buffer, offset0, elems, 0, length)
             new HashTrieSet[A](rbm, elems, rs)
           }
@@ -783,7 +786,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => null
     }
 
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -814,7 +817,7 @@ object HashSet extends IterableFactory[HashSet] {
           // highest remaining bit in bbm
           val blsb = bbm ^ (bbm & (bbm - 1))
           if (alsb == blsb) {
-            val sub1 = a(ai).diff0(b(bi), level + 5, buffer, offset)
+            val sub1 = a(ai).nn.diff0(b(bi).nn, level + 5, buffer, offset)
             if (sub1 ne null) {
               rs += sub1.size
               rbm |= alsb
@@ -828,7 +831,7 @@ object HashSet extends IterableFactory[HashSet] {
           } else if (BitOperations.Int.unsignedCompare(alsb - 1, blsb - 1)) {
             // alsb is smaller than blsb, or alsb is set and blsb is 0
             // in any case, alsb is guaranteed to be set here!
-            val sub1 = a(ai)
+            val sub1 = a(ai).nn
             rs += sub1.size
             rbm |= alsb
             buffer(offset) = sub1; offset += 1
@@ -852,7 +855,7 @@ object HashSet extends IterableFactory[HashSet] {
           if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
             buffer(offset0)
           else {
-            val elems = new Array[HashSet[A]](length)
+            val elems = new Array[HashSet[A] | Null](length)
             System.arraycopy(buffer, offset0, elems, 0, length)
             new HashTrieSet[A](rbm, elems, rs)
           }
@@ -860,7 +863,7 @@ object HashSet extends IterableFactory[HashSet] {
       case that: HashSetCollision1[A] =>
         // we remove the elements using removed0 so we can use the fact that we know the hash of all elements
         // to be removed
-        @tailrec def removeAll(s:HashSet[A], r:ListSet[A]) : HashSet[A] =
+        @tailrec def removeAll(s:HashSet[A] | Null, r:ListSet[A]) : HashSet[A] | Null =
           if(r.isEmpty || (s eq null)) s
           else removeAll(s.removed0(r.head, that.hash, level), r.tail)
         removeAll(this, that.ks)
@@ -887,7 +890,7 @@ object HashSet extends IterableFactory[HashSet] {
             if (alsb == blsb) {
               // we are doing a comparison of a child of this with a child of that,
               // so we have to increase the level by 5 to keep track of how deep we are in the tree
-              if (!a(ai).subsetOf0(b(bi), level + 5))
+              if (!a(ai).nn.subsetOf0(b(bi).nn, level + 5))
                 return false
               // clear lowest remaining one bit in abm and increase the a index
               abm &= ~alsb; ai += 1
@@ -910,7 +913,7 @@ object HashSet extends IterableFactory[HashSet] {
         false
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = {
       // current offset
       var offset = offset0
       // result size
@@ -920,7 +923,7 @@ object HashSet extends IterableFactory[HashSet] {
       // loop over all elements
       var i = 0
       while (i < elems.length) {
-        val result = elems(i).filter0(p, negate, level + 5, buffer, offset)
+        val result = elems(i).nn.filter0(p, negate, level + 5, buffer, offset)
         if (result ne null) {
           buffer(offset) = result
           offset += 1
@@ -943,7 +946,7 @@ object HashSet extends IterableFactory[HashSet] {
       } else {
         // we have to return a HashTrieSet
         val length = offset - offset0
-        val elems1 = new Array[HashSet[A]](length)
+        val elems1 = new Array[HashSet[A] | Null](length)
         System.arraycopy(buffer, offset0, elems1, 0, length)
         val bitmap1 = if (length == elems.length) {
           // we can reuse the original bitmap
@@ -963,7 +966,7 @@ object HashSet extends IterableFactory[HashSet] {
     val index1 = (hash1 >>> level) & 0x1f
     if(index0 != index1) {
       val bitmap = (1 << index0) | (1 << index1)
-      val elems = new Array[HashSet[A]](2)
+      val elems = new Array[HashSet[A] | Null](2)
       if(index0 < index1) {
         elems(0) = elem0
         elems(1) = elem1
@@ -973,7 +976,7 @@ object HashSet extends IterableFactory[HashSet] {
       }
       new HashTrieSet[A](bitmap, elems, elem0.size + elem1.size)
     } else {
-      val elems = new Array[HashSet[A]](1)
+      val elems = new Array[HashSet[A] | Null](1)
       val bitmap = (1 << index0)
       val child = makeHashTrieSet(hash0, elem0, hash1, elem1, level + 5)
       elems(0) = child
@@ -992,6 +995,6 @@ object HashSet extends IterableFactory[HashSet] {
     * In many internal operations the empty set is represented as null for performance reasons. This method converts
     * null to the empty set for use in public methods
     */
-  @`inline` private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
+  @`inline` private def nullToEmpty[A](s: HashSet[A] | Null): HashSet[A] = if (s eq null) empty[A] else s
 
 }
