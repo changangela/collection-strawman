@@ -1,6 +1,9 @@
 package strawman
 package collection.immutable
 
+import scala.Null
+import scala.ExplicitNulls._
+
 import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 import collection.Hashing.{computeHash, keepBits}
 
@@ -64,7 +67,7 @@ sealed abstract class HashMap[K, +V]
     */
   def merged[V1 >: V](that: HashMap[K, V1])(mergef: MergeFunction[K, V1]): HashMap[K, V1] = merge0(that, 0, liftMerger(mergef))
 
-  protected def updated0[V1 >: V](key: K, hash: Int, level: Int, value: V1, kv: (K, V1), merger: Merger[K, V1]): HashMap[K, V1]
+  protected def updated0[V1 >: V](key: K, hash: Int, level: Int, value: V1, kv: (K, V1) | Null, merger: Merger[K, V1] | Null): HashMap[K, V1]
 
   protected def removed0(key: K, hash: Int, level: Int): HashMap[K, V]
 
@@ -143,7 +146,7 @@ object HashMap extends MapFactory[HashMap] {
     val index1 = (hash1 >>> level) & 0x1f
     if(index0 != index1) {
       val bitmap = (1 << index0) | (1 << index1)
-      val elems = new Array[HashMap[A,B]](2)
+      val elems = new Array[HashMap[A,B] | Null](2)
       if(index0 < index1) {
         elems(0) = elem0
         elems(1) = elem1
@@ -153,7 +156,7 @@ object HashMap extends MapFactory[HashMap] {
       }
       new HashTrieMap[A, B](bitmap, elems, size)
     } else {
-      val elems = new Array[HashMap[A,B]](1)
+      val elems = new Array[HashMap[A,B] | Null](1)
       val bitmap = (1 << index0)
       elems(0) = makeHashTrieMap(hash0, elem0, hash1, elem1, level + 5, size)
       new HashTrieMap[A, B](bitmap, elems, size)
@@ -183,7 +186,7 @@ object HashMap extends MapFactory[HashMap] {
 
     protected def get0(key: Any, hash: Int, level: Int): Option[Nothing] = None
 
-    protected def filter0(p: ((Any, Nothing)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[Any, Nothing]], offset0: Int): HashMap[Any, Nothing] = null
+    protected def filter0(p: ((Any, Nothing)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[Any, Nothing]], offset0: Int): HashMap[Any, Nothing] | Null = null
 
     protected def contains0(key: Any, hash: Int, level: Int): Boolean = false
 
@@ -245,7 +248,7 @@ object HashMap extends MapFactory[HashMap] {
     protected def removed0(key: K, hash: Int, level: Int): HashMap[K, V] =
       if (hash == this.hash && key == this.key) HashMap.empty[K,V] else this
 
-    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] =
+    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null =
       if (negate ^ p(ensurePair)) this else null
 
     override def foreach[U](f: ((K, V)) => U): Unit = f(ensurePair)
@@ -296,7 +299,7 @@ object HashMap extends MapFactory[HashMap] {
         }
       } else this
 
-    override protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] = {
+    override protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null = {
       val kvs1 = if (negate) kvs.filterNot(p) else kvs.filter(p)
       kvs1.size match {
         case 0 =>
@@ -333,7 +336,7 @@ object HashMap extends MapFactory[HashMap] {
   @SerialVersionUID(3L)
   final class HashTrieMap[K, +V](
     private[collection] val bitmap: Int,
-    private[collection] val elems: Array[HashMap[K, V @uV]],
+    private[collection] val elems: Array[HashMap[K, V @uV] | Null],
     private[collection] val size0: Int
   ) extends HashMap[K, V @uV] {
 
@@ -346,12 +349,12 @@ object HashMap extends MapFactory[HashMap] {
       // Note: this code is duplicated with `contains0`
       val index = (hash >>> level) & 0x1f
       if (bitmap == - 1) {
-        elems(index).get0(key, hash, level + 5)
+        elems(index).nn.get0(key, hash, level + 5)
       } else {
         val mask = (1 << index)
         if ((bitmap & mask) != 0) {
           val offset = Integer.bitCount(bitmap & (mask - 1))
-          elems(offset).get0(key, hash, level + 5)
+          elems(offset).nn.get0(key, hash, level + 5)
         } else {
           None
         }
@@ -362,12 +365,12 @@ object HashMap extends MapFactory[HashMap] {
       // Note: this code is duplicated from `get0`
       val index = (hash >>> level) & 0x1f
       if (bitmap == - 1) {
-        elems(index).contains0(key, hash, level + 5)
+        elems(index).nn.contains0(key, hash, level + 5)
       } else {
         val mask = (1 << index)
         if ((bitmap & mask) != 0) {
           val offset = Integer.bitCount(bitmap & (mask - 1))
-          elems(offset).contains0(key, hash, level + 5)
+          elems(offset).nn.contains0(key, hash, level + 5)
         } else {
           false
         }
@@ -379,16 +382,16 @@ object HashMap extends MapFactory[HashMap] {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
+        val sub = elems(offset).nn
         val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
         if(subNew eq sub) this else {
-          val elemsNew = new Array[HashMap[K,V1]](elems.length)
+          val elemsNew = new Array[HashMap[K,V1] | Null](elems.length)
           Array.copy(elems, 0, elemsNew, 0, elems.length)
           elemsNew(offset) = subNew
           new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
         }
       } else {
-        val elemsNew = new Array[HashMap[K,V1]](elems.length + 1)
+        val elemsNew = new Array[HashMap[K,V1] | Null](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
         elemsNew(offset) = new HashMap1(key, hash, value, kv)
         Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
@@ -396,18 +399,18 @@ object HashMap extends MapFactory[HashMap] {
       }
     }
 
-    override def removed0(key: K, hash: Int, level: Int): HashMap[K, V] = {
+    override def removed0(key: K, hash: Int, level: Int): HashMap[K, V] | Null = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
+        val sub = elems(offset).nn
         val subNew = sub.removed0(key, hash, level + 5)
         if (subNew eq sub) this
         else if (subNew.isEmpty) {
           val bitmapNew = bitmap ^ mask
           if (bitmapNew != 0) {
-            val elemsNew = new Array[HashMap[K,V]](elems.length - 1)
+            val elemsNew = new Array[HashMap[K,V] | Null](elems.length - 1)
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
@@ -422,7 +425,7 @@ object HashMap extends MapFactory[HashMap] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieMap[_,_]]) {
           subNew
         } else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
+          val elemsNew = java.util.Arrays.copyOf(elems, elems.length).nn
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieMap(bitmap, elemsNew, sizeNew)
@@ -432,7 +435,7 @@ object HashMap extends MapFactory[HashMap] {
       }
     }
 
-    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] = {
+    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null = {
       // current offset
       var offset = offset0
       // result size
@@ -442,7 +445,7 @@ object HashMap extends MapFactory[HashMap] {
       // loop over all elements
       var i = 0
       while (i < elems.length) {
-        val result = elems(i).filter0(p, negate, level + 5, buffer, offset)
+        val result = elems(i).nn.filter0(p, negate, level + 5, buffer, offset)
         if (result ne null) {
           buffer(offset) = result
           offset += 1
@@ -465,7 +468,7 @@ object HashMap extends MapFactory[HashMap] {
       } else {
         // we have to return a HashTrieMap
         val length = offset - offset0
-        val elems1 = new Array[HashMap[K, V]](length)
+        val elems1 = new Array[HashMap[K, V] | Null](length)
         System.arraycopy(buffer, offset0, elems1, 0, length)
         val bitmap1 = if (length == elems.length) {
           // we can reuse the original bitmap
@@ -485,7 +488,7 @@ object HashMap extends MapFactory[HashMap] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       var i = 0
       while (i < elems.length) {
-        elems(i).foreach(f)
+        elems(i).nn.foreach(f)
         i += 1
       }
     }
@@ -511,11 +514,11 @@ object HashMap extends MapFactory[HashMap] {
         val bm2 = bitmap & (-1 >>> (32 - bitsplitpoint))
 
         val (e1, e2) = elems.splitAt(splitpoint)
-        val hm1 = new HashTrieMap(bm1, e1, e1.foldLeft(0)(_ + _.size))
-        val hm2 = new HashTrieMap(bm2, e2, e2.foldLeft(0)(_ + _.size))
+        val hm1 = new HashTrieMap(bm1, e1, e1.foldLeft(0)(_ + _.nn.size))
+        val hm2 = new HashTrieMap(bm2, e2, e2.foldLeft(0)(_ + _.nn.size))
 
         List(hm1, hm2)
-      } else elems(0).split
+      } else elems(0).nn.split
     }
 
     protected def merge0[V1 >: V](that: HashMap[K, V1], level: Int, merger: Merger[K, V1]): HashMap[K, V1] = that match {
@@ -532,7 +535,7 @@ object HashMap extends MapFactory[HashMap] {
         val subcount = Integer.bitCount(thisbm | thatbm)
 
         // construct a new array of appropriate size
-        val merged = new Array[HashMap[K, V1]](subcount)
+        val merged = new Array[HashMap[K, V1] | Null](subcount)
 
         // run through both bitmaps and add elements to it
         var i = 0
@@ -545,7 +548,7 @@ object HashMap extends MapFactory[HashMap] {
 
           // collision
           if (thislsb == thatlsb) {
-            val m = thiselems(thisi).merge0(thatelems(thati), level + 5, merger)
+            val m = thiselems(thisi).nn.merge0(thatelems(thati).nn, level + 5, merger)
             totalelems += m.size
             merged(i) = m
             thisbm = thisbm & ~thislsb
@@ -554,14 +557,14 @@ object HashMap extends MapFactory[HashMap] {
             thisi += 1
           } else {
             if (Integer.compareUnsigned(thislsb - 1, thatlsb - 1) < 0) {
-              val m = thiselems(thisi)
+              val m = thiselems(thisi).nn
               totalelems += m.size
               merged(i) = m
               thisbm = thisbm & ~thislsb
               thisi += 1
             }
             else {
-              val m = thatelems(thati)
+              val m = thatelems(thati).nn
               totalelems += m.size
               merged(i) = m
               thatbm = thatbm & ~thatlsb
