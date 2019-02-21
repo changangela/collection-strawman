@@ -50,7 +50,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return   A Scala `Iterator` view of the argument.
    */
   implicit def asScalaIterator[A](it: ju.Iterator[A]): Iterator[A] = it match {
-    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JIteratorWrapper(it)
   }
@@ -69,7 +68,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala Iterator view of the argument.
    */
   implicit def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A] = i match {
-    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JEnumerationWrapper(i)
   }
@@ -89,7 +87,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala Iterable view of the argument.
    */
   implicit def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A] = i match {
-    case null                     => null
     case IterableWrapper(wrapped) => wrapped
     case _                        => JIterableWrapper(i)
   }
@@ -105,7 +102,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala Iterable view of the argument.
    */
   implicit def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A] = i match {
-    case null                     => null
     case IterableWrapper(wrapped) => wrapped
     case _                        => JCollectionWrapper(i)
   }
@@ -125,7 +121,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable `Buffer` view of the argument.
    */
   implicit def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A] = l match {
-    case null                           => null
     case MutableBufferWrapper(wrapped)  => wrapped
     case _                              => new JListWrapper(l)
   }
@@ -144,7 +139,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable Set view of the argument.
    */
   implicit def asScalaSet[A](s: ju.Set[A]): mutable.Set[A] = s match {
-    case null                       => null
     case MutableSetWrapper(wrapped) => wrapped
     case _                          => new JSetWrapper(s)
   }
@@ -170,7 +164,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable Map view of the argument.
    */
   implicit def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = m match {
-    case null                       => null
     case MutableMapWrapper(wrapped) => wrapped
     case _                          => new JMapWrapper(m)
   }
@@ -189,7 +182,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
   implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
-    case null                             => null
     case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
@@ -206,7 +198,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return  A Scala mutable Map view of the argument.
    */
   implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
-    case null                       => null
     case DictionaryWrapper(wrapped) => wrapped
     case _                          => new JDictionaryWrapper(p)
   }
@@ -222,7 +213,6 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return  A Scala mutable Map[String, String] view of the argument.
    */
   implicit def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = p match {
-    case null => null
     case _    => new JPropertiesWrapper(p)
   }
 }
