@@ -23,6 +23,9 @@ import scala.util.hashing.Hashing
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
 
+import scala.language.implicitNulls
+import scala.Null
+
 private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
   import INodeBase._
 
@@ -272,7 +275,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
         }
         cleanReadOnly(tn)
       case ln: LNode[K, V] => // 5) an l-node
-        ln.get(k).asInstanceOf[Option[AnyRef]].orNull
+        ln.get(k).asInstanceOf[Option[AnyRef|Null]].orNull
     }
   }
 
