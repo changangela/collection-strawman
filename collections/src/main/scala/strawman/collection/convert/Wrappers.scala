@@ -12,6 +12,8 @@ package convert
 
 import scala.{Any, AnyRef, Boolean, ClassCastException, Int, None, Option, SerialVersionUID, Serializable, Some, Unit}
 import scala.Predef.String
+import scala.Null
+import scala.ExplicitNulls._
 import java.{lang => jl, util => ju}
 import java.util.{concurrent => juc}
 import java.util.function.Predicate
@@ -44,13 +46,13 @@ private[collection] trait Wrappers {
   @SerialVersionUID(3L)
   case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] {
     def hasNext = underlying.hasNext
-    def next() = underlying.next
+    def next() = underlying.next.nn
   }
 
   @SerialVersionUID(3L)
   case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] {
     def hasNext = underlying.hasMoreElements
-    def next() = underlying.nextElement
+    def next() = underlying.nextElement.nn
   }
 
   @SerialVersionUID(3L)
@@ -98,7 +100,7 @@ private[collection] trait Wrappers {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterator(): Iterator[A] = underlying.iterator().asScala
-    def apply(i: Int) = underlying.get(i)
+    def apply(i: Int) = underlying.get(i).nn
     def update(i: Int, elem: A) = underlying.set(i, elem)
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
     def addOne(elem: A): this.type = { underlying add elem; this }
@@ -107,7 +109,7 @@ private[collection] trait Wrappers {
       val ins = underlying.subList(0, i)
       elems.iterator().foreach(ins.add(_))
     }
-    def remove(i: Int) = underlying.remove(i)
+    def remove(i: Int) = underlying.remove(i).nn
     def clear() = underlying.clear()
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
     // expose clone methods.  Generically, they're protected.
@@ -116,7 +118,7 @@ private[collection] trait Wrappers {
     def flatMapInPlace(f: A => strawman.collection.IterableOnce[A]): this.type = {
       val it = underlying.listIterator()
       while(it.hasNext) {
-        val e = it.next()
+        val e = it.next().nn
         it.remove()
         val es = f(e)
         es.iterator().foreach(it.add)
@@ -128,12 +130,12 @@ private[collection] trait Wrappers {
       insertAll(from, patch)
       this
     }
-    def filterInPlace(p: A => Boolean): this.type = { underlying.removeIf((x => p(x)): Predicate[A]); this }
+    def filterInPlace(p: A => Boolean): this.type = { underlying.removeIf((x => p(x.nn)): Predicate[A]); this }
     def remove(from: Int, n: Int): Unit = underlying.subList(from, from+n).clear()
     def mapInPlace(f: A => A): this.type = {
       val it = underlying.listIterator()
       while(it.hasNext()) {
-        val e = it.next()
+        val e = it.next().nn
         val e2 = f(e)
         if(e2.asInstanceOf[AnyRef] ne e.asInstanceOf[AnyRef]) it.set(e2)
       }
@@ -327,19 +329,19 @@ private[collection] trait Wrappers {
         None
     }
 
-    def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
+    def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2).nn; this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
 
-    override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
+    override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v).nn)
 
     override def update(k: K, v: V): Unit = { underlying.put(k, v) }
 
-    override def remove(k: K): Option[V] = Option(underlying remove k)
+    override def remove(k: K): Option[V] = Option((underlying remove k).nn)
 
     def iterator(): Iterator[(K, V)] = new AbstractIterator[(K, V)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
-      def next() = { val e = ui.next(); (e.getKey, e.getValue) }
+      def next() = { val e = ui.next(); (e.getKey.nn, e.getValue.nn) }
     }
 
     override def clear() = underlying.clear()
@@ -391,15 +393,15 @@ private[collection] trait Wrappers {
     extends AbstractJMapWrapper[A, B]
       with concurrent.Map[A, B] {
 
-    override def get(k: A) = Option(underlying get k)
+    override def get(k: A) = Option((underlying get k).nn)
 
     override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[A, B])
 
-    def putIfAbsent(k: A, v: B): Option[B] = Option(underlying.putIfAbsent(k, v))
+    def putIfAbsent(k: A, v: B): Option[B] = Option(underlying.putIfAbsent(k, v).nn)
 
     def remove(k: A, v: B): Boolean = underlying.remove(k, v)
 
-    def replace(k: A, v: B): Option[B] = Option(underlying.replace(k, v))
+    def replace(k: A, v: B): Option[B] = Option(underlying.replace(k, v).nn)
 
     def replace(k: A, oldvalue: B, newvalue: B): Boolean =
       underlying.replace(k, oldvalue, newvalue)
@@ -437,18 +439,18 @@ private[collection] trait Wrappers {
   case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] with mutable.Map[A, B] {
     override def size: Int = underlying.size
 
-    def get(k: A) = Option(underlying get k)
+    def get(k: A) = Option((underlying get k).nn)
 
     def addOne(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: A): this.type = { underlying remove key; this }
 
-    override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v))
+    override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v).nn)
 
     override def update(k: A, v: B): Unit = { underlying.put(k, v) }
 
-    override def remove(k: A): Option[B] = Option(underlying remove k)
+    override def remove(k: A): Option[B] = Option((underlying remove k).nn)
 
-    def iterator() = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
+    def iterator() = enumerationAsScalaIterator(underlying.keys.nn) map (k => (k, (underlying get k).nn))
 
     def clear() = iterator().foreach(entry => underlying.remove(entry._1))
 
