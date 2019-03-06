@@ -1,5 +1,8 @@
 package strawman.collection
 
+import scala.Null
+import scala.ExplicitNulls.ArrayUtils.ArrayExtensions
+
 import scala.{Any, AnyRef, Array, Boolean, Equals, IndexOutOfBoundsException, Int, NoSuchElementException, Ordering, Unit, math, throws, `inline`, deprecated, PartialFunction}
 import scala.Predef.{identity, intWrapper, $conforms}
 import java.lang.{Object, String}
@@ -590,7 +593,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     if (len == 1) b ++= toIterable
     else if (len > 1) {
       b.sizeHint(len)
-      val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
+      val arr = Array.ofNulls[AnyRef | Null](len) // Previously used ArraySeq for more compact but slower code
       var i = 0
       for (x <- this) {
         arr(i) = x.asInstanceOf[AnyRef]
