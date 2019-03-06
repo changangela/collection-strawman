@@ -6,6 +6,9 @@ import collection.Hashing.{computeHash, keepBits}
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, Nothing, Option, SerialVersionUID, Serializable, Some, Unit, `inline`, math, sys}
+import scala.Null
+import scala.ExplicitNulls._
+import scala.ExplicitNulls.ArrayUtils.ArrayExtensions
 import java.lang.{Integer, String, System}
 
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
@@ -64,7 +67,7 @@ sealed abstract class HashMap[K, +V]
     */
   def merged[V1 >: V](that: HashMap[K, V1])(mergef: MergeFunction[K, V1]): HashMap[K, V1] = merge0(that, 0, liftMerger(mergef))
 
-  protected def updated0[V1 >: V](key: K, hash: Int, level: Int, value: V1, kv: (K, V1), merger: Merger[K, V1]): HashMap[K, V1]
+  protected def updated0[V1 >: V](key: K, hash: Int, level: Int, value: V1, kv: (K, V1) | Null, merger: Merger[K, V1] | Null): HashMap[K, V1]
 
   protected def removed0(key: K, hash: Int, level: Int): HashMap[K, V]
 
@@ -183,7 +186,7 @@ object HashMap extends MapFactory[HashMap] {
 
     protected def get0(key: Any, hash: Int, level: Int): Option[Nothing] = None
 
-    protected def filter0(p: ((Any, Nothing)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[Any, Nothing]], offset0: Int): HashMap[Any, Nothing] = null
+    protected def filter0(p: ((Any, Nothing)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[Any, Nothing]], offset0: Int): HashMap[Any, Nothing] | Null = null
 
     protected def contains0(key: Any, hash: Int, level: Int): Boolean = false
 
@@ -245,7 +248,7 @@ object HashMap extends MapFactory[HashMap] {
     protected def removed0(key: K, hash: Int, level: Int): HashMap[K, V] =
       if (hash == this.hash && key == this.key) HashMap.empty[K,V] else this
 
-    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] =
+    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null =
       if (negate ^ p(ensurePair)) this else null
 
     override def foreach[U](f: ((K, V)) => U): Unit = f(ensurePair)
@@ -296,7 +299,7 @@ object HashMap extends MapFactory[HashMap] {
         }
       } else this
 
-    override protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] = {
+    override protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null = {
       val kvs1 = if (negate) kvs.filterNot(p) else kvs.filter(p)
       kvs1.size match {
         case 0 =>
@@ -422,7 +425,7 @@ object HashMap extends MapFactory[HashMap] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieMap[_,_]]) {
           subNew
         } else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
+          val elemsNew = Array.copyOf(elems,  elems.length)
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieMap(bitmap, elemsNew, sizeNew)
@@ -432,7 +435,7 @@ object HashMap extends MapFactory[HashMap] {
       }
     }
 
-    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] = {
+    protected def filter0(p: ((K, V)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[K, V @uV]], offset0: Int): HashMap[K, V] | Null = {
       // current offset
       var offset = offset0
       // result size
