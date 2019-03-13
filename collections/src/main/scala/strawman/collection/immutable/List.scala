@@ -233,7 +233,7 @@ sealed abstract class List[+A]
         val x: Any = pf.applyOrElse(rest.head, List.partialNotApplied)
         if (x.asInstanceOf[AnyRef] ne List.partialNotApplied) h = new ::(x.asInstanceOf[B], Nil)
         rest = rest.tail
-        if (rest eq Nil) return if (h eq null) Nil else h.asInstanceOf[List[B]]
+        if (rest eq Nil) return if (h eq null) Nil else h.nn
       } while (h eq null)
       var t = h.nn
       // Remaining elements
