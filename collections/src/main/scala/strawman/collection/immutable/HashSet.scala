@@ -7,6 +7,9 @@ import Hashing.computeHash
 
 import scala.{Any, AnyRef, Array, Boolean, Int, NoSuchElementException, None, SerialVersionUID, Serializable, Some, Unit, `inline`, sys}
 import scala.Predef.{assert, intWrapper}
+import scala.Null
+import scala.ExplicitNulls._
+import scala.ExplicitNulls.ArrayUtils.ArrayExtensions
 import java.lang.{Integer, System}
 
 import strawman.collection.generic.BitOperations
@@ -91,7 +94,7 @@ sealed abstract class HashSet[A]
 
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
 
-  protected def removed0(key: A, hash: Int, level: Int): HashSet[A]
+  protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null
 
   protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
 
@@ -125,7 +128,7 @@ sealed abstract class HashSet[A]
     * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
     *         HashSet but needs to be stored at the correct depth
     */
-  protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null
 
   /**
     * Intersection with another hash set at a given level
@@ -135,7 +138,7 @@ sealed abstract class HashSet[A]
     * @return The intersection of this and that at the given level. Unless level is zero, the result is not a
     *         self-contained HashSet but needs to be stored at the correct depth
     */
-  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null
 
   /**
     * Diff with another hash set at a given level
@@ -145,7 +148,7 @@ sealed abstract class HashSet[A]
     * @return The diff of this and that at the given level. Unless level is zero, the result is not a
     *         self-contained HashSet but needs to be stored at the correct depth
     */
-  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null
 
 }
 
@@ -201,11 +204,11 @@ object HashSet extends IterableFactory[HashSet] {
 
     protected def union0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = that
 
-    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
-    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
-    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] | Null = null
 
   }
 
@@ -294,7 +297,7 @@ object HashSet extends IterableFactory[HashSet] {
     protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
       if (that.get0(key, hash, level)) null else this
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null =
       if (negate ^ p(key)) this else null
   }
 
@@ -313,7 +316,7 @@ object HashSet extends IterableFactory[HashSet] {
       if (hash == this.hash) new HashSetCollision1(hash, ks + key)
       else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null =
       if (hash == this.hash) {
         val ks1 = ks - key
         ks1.size match {
@@ -347,7 +350,7 @@ object HashSet extends IterableFactory[HashSet] {
       //hash = computeHash(kvs.)
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = {
       val ks1 = if(negate) ks.filterNot(p) else ks.filter(p)
       ks1.size match {
         case 0 =>
@@ -539,7 +542,7 @@ object HashSet extends IterableFactory[HashSet] {
         val subNew = sub.updated0(key, hash, level + 5)
         if (sub eq subNew) this
         else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
+          val elemsNew = Array.copyOf(elems,  elems.length)
           elemsNew(offset) = subNew
           new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
         }
@@ -553,7 +556,7 @@ object HashSet extends IterableFactory[HashSet] {
       }
     }
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
+    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] | Null = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -579,7 +582,7 @@ object HashSet extends IterableFactory[HashSet] {
         } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieSet[_]]) {
           subNew
         } else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
+          val elemsNew = Array.copyOf(elems, elems.length)
           elemsNew(offset) = subNew
           val sizeNew = size + (subNew.size - sub.size)
           new HashTrieSet(bitmap, elemsNew, sizeNew)
@@ -644,7 +647,7 @@ object HashSet extends IterableFactory[HashSet] {
           // lowest remaining bit in bbm
           val blsb = bbm ^ (bbm & (bbm - 1))
           if (alsb == blsb) {
-            val sub1 = a(ai).union0(b(bi), level + 5, buffer, offset)
+            val sub1 = a(ai).union0(b(bi), level + 5, buffer, offset).nn
             rs += sub1.size
             buffer(offset) = sub1
             offset += 1
@@ -693,7 +696,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => this
     }
 
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -783,7 +786,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => null
     }
 
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -860,7 +863,7 @@ object HashSet extends IterableFactory[HashSet] {
       case that: HashSetCollision1[A] =>
         // we remove the elements using removed0 so we can use the fact that we know the hash of all elements
         // to be removed
-        @tailrec def removeAll(s:HashSet[A], r:ListSet[A]) : HashSet[A] =
+        @tailrec def removeAll(s:HashSet[A] | Null, r:ListSet[A]) : HashSet[A] | Null =
           if(r.isEmpty || (s eq null)) s
           else removeAll(s.removed0(r.head, that.hash, level), r.tail)
         removeAll(this, that.ks)
@@ -910,7 +913,7 @@ object HashSet extends IterableFactory[HashSet] {
         false
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] | Null = {
       // current offset
       var offset = offset0
       // result size
@@ -992,6 +995,6 @@ object HashSet extends IterableFactory[HashSet] {
     * In many internal operations the empty set is represented as null for performance reasons. This method converts
     * null to the empty set for use in public methods
     */
-  @`inline` private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
+  @`inline` private def nullToEmpty[A](s: HashSet[A] | Null): HashSet[A] = if (s eq null) empty[A] else s
 
 }
