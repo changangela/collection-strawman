@@ -6,6 +6,8 @@ import scala.{Int, Option, None, `inline`, Serializable, Unit, Array, StringCont
 import scala.reflect.ClassTag
 import scala.Predef.{assert, require}
 
+import scala.Null
+
 import strawman.collection.{Iterator, StrictOptimizedSeqOps}
 
 import java.lang.Math
@@ -33,7 +35,7 @@ import java.util.NoSuchElementException
   */
 @SerialVersionUID(3L)
 class ArrayDeque[A] protected (
-    private[ArrayDeque] var array: Array[AnyRef],
+    private[ArrayDeque] var array: Array[AnyRef | Null],
     private[ArrayDeque] var start: Int,
     private[ArrayDeque] var end: Int
 ) extends Buffer[A]
@@ -45,7 +47,7 @@ class ArrayDeque[A] protected (
 
   reset(array, start, end)
 
-  private[this] def reset(array: Array[AnyRef], start: Int, end: Int) = {
+  private[this] def reset(array: Array[AnyRef | Null], start: Int, end: Int) = {
     assert((array.length & (array.length - 1)) == 0, s"Array.length must be power of 2")
     requireBounds(idx = start, until = array.length)
     requireBounds(idx = end, until = array.length)
@@ -429,7 +431,7 @@ class ArrayDeque[A] protected (
     }
   }
 
-  protected def ofArray(array: Array[AnyRef], end: Int): ArrayDeque[A] =
+  protected def ofArray(array: Array[AnyRef | Null], end: Int): ArrayDeque[A] =
     new ArrayDeque[A](array, start = 0, end)
 
   override def sliding(window: Int, step: Int): Iterator[IterableCC[A]] = {
@@ -548,6 +550,6 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     require(len >= 0, s"Non-negative array size required")
     val size = (1 << 31) >>> java.lang.Integer.numberOfLeadingZeros(len) << 1
     require(size >= 0, s"ArrayDeque too big - cannot allocate ArrayDeque of length $len")
-    new Array[AnyRef](Math.max(size, DefaultInitialSize))
+    new Array[AnyRef | Null](Math.max(size, DefaultInitialSize))
   }
 }
