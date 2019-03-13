@@ -98,7 +98,7 @@ trait AsJavaConverters {
    * @param b The Scala `Buffer` to be converted.
    * @return A Java `List` view of the argument.
    */
-  def bufferAsJavaList[A](b: mutable.Buffer[A]): ju.List[A] = b match {
+  def bufferAsJavaList[A](b: mutable.Buffer[A | Null]): ju.List[A] = b match {
     case JListWrapper(wrapped)  => wrapped
     case _                      => new MutableBufferWrapper(b)
   }

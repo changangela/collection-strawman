@@ -14,22 +14,23 @@ import scala.deprecated
 import scala.Predef.String
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import scala.language.implicitConversions
+import scala.Null
 
 @deprecated("use JavaConverters or consider ToScalaImplicits", since="2.12.0")
 trait WrapAsScala extends LowPriorityWrapAsScala {
   // provide higher-priority implicits with names that don't exist in JavaConverters for the case
   // when importing both JavaConverters._ and JavaConversions._. otherwise implicit conversions
   // would not apply, see https://github.com/scala/scala/pull/5109#issuecomment-212417789
-  implicit def `deprecated asScalaIterator`[A](it: ju.Iterator[A]): Iterator[A] = asScalaIterator(it)
-  implicit def `deprecated enumerationAsScalaIterator`[A](i: ju.Enumeration[A]): Iterator[A] = enumerationAsScalaIterator(i)
-  implicit def `deprecated iterableAsScalaIterable`[A](i: jl.Iterable[A]): Iterable[A] = iterableAsScalaIterable(i)
-  implicit def `deprecated collectionAsScalaIterable`[A](i: ju.Collection[A]): Iterable[A] = collectionAsScalaIterable(i)
-  implicit def `deprecated asScalaBuffer`[A](l: ju.List[A]): mutable.Buffer[A] = asScalaBuffer(l)
-  implicit def `deprecated asScalaSet`[A](s: ju.Set[A]): mutable.Set[A] = asScalaSet(s)
-  implicit def `deprecated mapAsScalaMap`[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap(m)
-  implicit def `deprecated mapAsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = mapAsScalaConcurrentMap(m)
-  implicit def `deprecated dictionaryAsScalaMap`[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = dictionaryAsScalaMap(p)
-  implicit def `deprecated propertiesAsScalaMap`(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
+  implicit def `deprecated asScalaIterator`[A](it: ju.Iterator[A]): Iterator[A | Null] = asScalaIterator(it)
+  implicit def `deprecated enumerationAsScalaIterator`[A](i: ju.Enumeration[A]): Iterator[A | Null] = enumerationAsScalaIterator(i)
+  implicit def `deprecated iterableAsScalaIterable`[A](i: jl.Iterable[A]): Iterable[A | Null] = iterableAsScalaIterable(i)
+  implicit def `deprecated collectionAsScalaIterable`[A](i: ju.Collection[A]): Iterable[A | Null] = collectionAsScalaIterable(i)
+  implicit def `deprecated asScalaBuffer`[A](l: ju.List[A]): mutable.Buffer[A | Null] = asScalaBuffer(l)
+  implicit def `deprecated asScalaSet`[A](s: ju.Set[A]): mutable.Set[A | Null] = asScalaSet(s)
+  implicit def `deprecated mapAsScalaMap`[A, B](m: ju.Map[A, B]): mutable.Map[A, B | Null] = mapAsScalaMap(m)
+  implicit def `deprecated mapAsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B | Null] = mapAsScalaConcurrentMap(m)
+  implicit def `deprecated dictionaryAsScalaMap`[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B | Null] = dictionaryAsScalaMap(p)
+  implicit def `deprecated propertiesAsScalaMap`(p: ju.Properties): mutable.Map[String, String | Null] = propertiesAsScalaMap(p)
 }
 
 private[convert] trait LowPriorityWrapAsScala {
@@ -49,7 +50,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param it The `Iterator` to be converted.
    * @return   A Scala `Iterator` view of the argument.
    */
-  implicit def asScalaIterator[A](it: ju.Iterator[A]): Iterator[A] = it match {
+  implicit def asScalaIterator[A](it: ju.Iterator[A]): Iterator[A | Null] = it match {
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JIteratorWrapper(it)
   }
@@ -67,7 +68,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param i The Enumeration to be converted.
    * @return A Scala Iterator view of the argument.
    */
-  implicit def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A] = i match {
+  implicit def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A | Null] = i match {
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JEnumerationWrapper(i)
   }
@@ -86,7 +87,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param i The Iterable to be converted.
    * @return A Scala Iterable view of the argument.
    */
-  implicit def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A] = i match {
+  implicit def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A | Null] = i match {
     case IterableWrapper(wrapped) => wrapped
     case _                        => JIterableWrapper(i)
   }
@@ -101,7 +102,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param i The Collection to be converted.
    * @return A Scala Iterable view of the argument.
    */
-  implicit def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A] = i match {
+  implicit def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A | Null] = i match {
     case IterableWrapper(wrapped) => wrapped
     case _                        => JCollectionWrapper(i)
   }
@@ -120,7 +121,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param l The `List` to be converted.
    * @return A Scala mutable `Buffer` view of the argument.
    */
-  implicit def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A] = l match {
+  implicit def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A | Null] = l match {
     case MutableBufferWrapper(wrapped)  => wrapped
     case _                              => new JListWrapper(l)
   }
@@ -138,7 +139,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param s The Set to be converted.
    * @return A Scala mutable Set view of the argument.
    */
-  implicit def asScalaSet[A](s: ju.Set[A]): mutable.Set[A] = s match {
+  implicit def asScalaSet[A](s: ju.Set[A]): mutable.Set[A | Null] = s match {
     case MutableSetWrapper(wrapped) => wrapped
     case _                          => new JSetWrapper(s)
   }
@@ -163,7 +164,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param m The Map to be converted.
    * @return A Scala mutable Map view of the argument.
    */
-  implicit def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = m match {
+  implicit def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B | Null] = m match {
     case MutableMapWrapper(wrapped) => wrapped
     case _                          => new JMapWrapper(m)
   }
@@ -181,7 +182,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param m The ConcurrentMap to be converted.
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
-  implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
+  implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B | Null] = m match {
     case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
@@ -197,7 +198,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param p The Dictionary to be converted.
    * @return  A Scala mutable Map view of the argument.
    */
-  implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
+  implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B | Null] = p match {
     case DictionaryWrapper(wrapped) => wrapped
     case _                          => new JDictionaryWrapper(p)
   }
@@ -212,7 +213,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @param p The Properties to be converted.
    * @return  A Scala mutable Map[String, String] view of the argument.
    */
-  implicit def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = p match {
+  implicit def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String | Null] = p match {
     case _    => new JPropertiesWrapper(p)
   }
 }
