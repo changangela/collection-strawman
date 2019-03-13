@@ -40,12 +40,12 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
   private[this] def getElems(x: Iterable[T]): Array[Iterable[T] | Null] = (x match {
     case x: HashTrieMap[_, _] => x.elems
     case x: HashTrieSet[_]    => x.elems
-  }).asInstanceOf[Array[Iterable[T]]]
+  }).asInstanceOf[Array[Iterable[T] | Null]]
 
-  private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {
+  private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T] | Null] = (x match {
     case x: HashMapCollision1[_, _] => x.kvs.map((x: (Any, Any)) => HashMap(x)).toArray
     case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
-  }).asInstanceOf[Array[Iterable[T]]]
+  }).asInstanceOf[Array[Iterable[T] | Null]]
 
   private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
 
@@ -58,7 +58,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
     case _                                  => false
   }
 
-  final class DupIterator(xs: Array[Iterable[T]] @uV) extends TrieIterator[T](xs) {
+  final class DupIterator(xs: Array[Iterable[T] | Null] @uV) extends TrieIterator[T](xs) {
     override def initDepth                                     = outer.depth
     override def initArrayStack: Array[Array[Iterable[T @uV] | Null] | Null] = outer.arrayStack
     override def initPosStack                                  = outer.posStack
@@ -71,14 +71,14 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
 
   def dupIterator: TrieIterator[T] = new DupIterator(elems)
 
-  private[this] def newIterator(xs: Array[Iterable[T]]) = new TrieIterator(xs) {
+  private[this] def newIterator(xs: Array[Iterable[T] | Null]) = new TrieIterator(xs) {
     final override def getElem(x: AnyRef): T = outer.getElem(x)
   }
 
-  private[this] def iteratorWithSize(arr: Array[Iterable[T]]): (Iterator[T], Int) =
-    (newIterator(arr), ((arr.map(_.size): Array[Int]): strawman.collection.IterableOps[Int, strawman.collection.Iterable, _]).sum)
+  private[this] def iteratorWithSize(arr: Array[Iterable[T] | Null]): (Iterator[T], Int) =
+    (newIterator(arr), ((arr.map(_.nn.size): Array[Int]): strawman.collection.IterableOps[Int, strawman.collection.Iterable, _]).sum)
 
-  private[this] def arrayToIterators(arr: Array[Iterable[T]]): SplitIterators = {
+  private[this] def arrayToIterators(arr: Array[Iterable[T] | Null]): SplitIterators = {
     val (fst, snd) = arr.splitAt(arr.length / 2)
 
     (iteratorWithSize(snd), newIterator(fst))
@@ -87,9 +87,9 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
     if (ad.length > 1) arrayToIterators(ad)
     else ad(0) match {
       case _: HashMapCollision1[_, _] | _: HashSetCollision1[_] =>
-        arrayToIterators(collisionToArray(ad(0)))
+        arrayToIterators(collisionToArray(ad(0).nn))
       case _ =>
-        splitArray(getElems(ad(0)))
+        splitArray(getElems(ad(0).nn))
     }
 
   def hasNext = (subIter ne null) || depth >= 0
@@ -118,7 +118,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
     } else
       posD += 1
 
-    val m = elems(i)
+    val m = elems(i).nn
 
     // Note: this block is over twice as fast written this way as it is
     // as a pattern match.  Haven't started looking into why that is, but
@@ -182,8 +182,8 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
         if (posStack(0) == arrayStack(0).nn.length - 1) {
           // 2a) only a single entry left on top
           // this means we have to modify this iterator - pop topmost
-          val snd = Array[Iterable[T]](arrayStack(0).nn.last)
-          val szsnd = snd(0).size
+          val snd = Array[Iterable[T] | Null](arrayStack(0).nn.last)
+          val szsnd = snd(0).nn.size
           // modify this - pop
           depth -= 1
           1 until arrayStack.length foreach (i => arrayStack(i - 1) = arrayStack(i))
@@ -200,9 +200,9 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
       } else {
         // 3) no topmost element (arrayD is at the top)
         //    steal a portion of it and update this iterator
-        if (posD == arrayD.length - 1) {
+        if (posD == arrayD.nn.length - 1) {
           // 3a) positioned at the last element of arrayD
-          val m = arrayD(posD)
+          val m = arrayD.nn(posD).nn
           arrayToIterators(
             if (isTrie(m)) getElems(m)
             else collisionToArray(m)
@@ -210,7 +210,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T] | N
         }
         else {
           // 3b) arrayD has more free elements
-          val (fst, snd) = arrayD.splitAt(arrayD.length - (arrayD.length - posD + 1) / 2)
+          val (fst, snd) = arrayD.nn.splitAt(arrayD.nn.length - (arrayD.nn.length - posD + 1) / 2)
           arrayD = fst
           (iteratorWithSize(snd), this)
         }
