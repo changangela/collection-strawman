@@ -11,6 +11,7 @@ package collection
 package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
+import scala.Null
 
 /** Defines converter methods from Scala to Java collections. */
 trait AsJavaConverters {
@@ -98,8 +99,8 @@ trait AsJavaConverters {
    * @param b The Scala `Buffer` to be converted.
    * @return A Java `List` view of the argument.
    */
-  def bufferAsJavaList[A](b: mutable.Buffer[A | Null]): ju.List[A] = b match {
-    case JListWrapper(wrapped)  => wrapped
+  def bufferAsJavaList[A](b: mutable.Buffer[A]): ju.List[A] = b match {
+    case JListWrapper(wrapped)  => wrapped.asInstanceOf[ju.List[A]]
     case _                      => new MutableBufferWrapper(b)
   }
 
