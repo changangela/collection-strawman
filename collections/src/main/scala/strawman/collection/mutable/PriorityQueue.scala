@@ -13,6 +13,8 @@ import scala.{ Int, Unit, AnyRef, Array, Boolean, Serializable, SerialVersionUID
 import scala.Predef.intWrapper
 import scala.math.Ordering
 
+import scala.Null
+
 /** This class implements priority queues using a heap.
   *  To prioritize elements of type A there must be an implicit
   *  Ordering[A] available at creation.
@@ -91,8 +93,8 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
   def result() = this
 
-  private def toA(x: AnyRef): A = x.asInstanceOf[A]
-  protected def fixUp(as: Array[AnyRef], m: Int): Unit = {
+  private def toA(x: AnyRef | Null): A = x.asInstanceOf[A]
+  protected def fixUp(as: Array[AnyRef | Null], m: Int): Unit = {
     var k: Int = m
     while (k > 1 && toA(as(k / 2)) < toA(as(k))) {
       resarr.p_swap(k, k / 2)
@@ -100,7 +102,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Boolean = {
+  protected def fixDown(as: Array[AnyRef | Null], m: Int, n: Int): Boolean = {
     // returns true if any swaps were done (used in heapify)
     var k: Int = m
     while (n >= 2 * k) {
