@@ -3,6 +3,8 @@ package collection
 package mutable
 
 import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, transient, Unit}
+import scala.Null
+import scala.ExplicitNulls._
 
 /** This class implements mutable sets using a hashtable.
   *
@@ -19,7 +21,7 @@ import scala.{Any, Boolean, Option, Serializable, SerialVersionUID, transient, U
   * @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-final class HashSet[A](contents: FlatHashTable.Contents[A])
+final class HashSet[A](contents: FlatHashTable.Contents[A] | Null)
   extends Set[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
@@ -54,7 +56,7 @@ final class HashSet[A](contents: FlatHashTable.Contents[A])
     val len = entries.length
     while (i < len) {
       val curEntry = entries(i)
-      if (curEntry ne null) f(table.entryToElem(curEntry))
+      if (curEntry ne null) f(table.entryToElem(curEntry).nn)
       i += 1
     }
   }

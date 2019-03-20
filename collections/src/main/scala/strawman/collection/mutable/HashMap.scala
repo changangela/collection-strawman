@@ -6,6 +6,8 @@ import strawman.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 import scala.{Boolean, Int, None, NoSuchElementException, Option, SerialVersionUID, Serializable, Some, throws, transient, Unit}
 import java.lang.String
 
+import scala.Null
+
 /** This class implements mutable maps using a hashtable.
   *
   *  @since 1
@@ -21,7 +23,7 @@ import java.lang.String
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
+class HashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]] | Null)
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]

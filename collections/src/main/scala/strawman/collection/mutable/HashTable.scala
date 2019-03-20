@@ -19,6 +19,9 @@ import scala.{Array, Boolean, Int, Null, transient, Unit}
 import scala.Predef.{assert, println}
 import java.lang.Integer
 
+import scala.Null
+import scala.ExplicitNulls._
+
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class `HashTable[A]` implements a hashtable
  *  that maps keys of type `A` to values of the fully abstract
@@ -49,7 +52,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
 
   /** The actual hash table.
    */
-  protected[collection] var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
+  protected[collection] var table: Array[HashEntry[A, Entry] | Null] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
@@ -63,7 +66,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
 
   /** The array keeping track of the number of elements in 32 element blocks.
    */
-  protected var sizemap: Array[Int] = null
+  protected var sizemap: Array[Int] | Null = null
 
   protected var seedvalue: Int = tableSizeSeed
 
@@ -216,7 +219,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     def hasNext = es != null
     def next() = {
       val res = es
-      es = es.next
+      es = es.nn.next
       while (es == null && idx > 0) {
         idx = idx - 1
         es = iterTable(idx)
@@ -232,7 +235,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     var es        = iterTable(idx)
 
     while (es != null) {
-      val next = es.next // Cache next in case f removes es.
+      val next = es.nn.next // Cache next in case f removes es.
       f(es.asInstanceOf[Entry])
       es = next
 
@@ -260,9 +263,9 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     while (i >= 0) {
       var e = oldTable(i)
       while (e != null) {
-        val h = index(elemHashCode(e.key))
-        val e1 = e.next
-        e.next = table(h).asInstanceOf[Entry]
+        val h = index(elemHashCode(e.nn.key))
+        val e1 = e.nn.next
+        e.nn.next = table(h).asInstanceOf[Entry]
         table(h) = e
         e = e1
         nnSizeMapAdd(h)
@@ -292,16 +295,16 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
    * there.
    */
   protected final def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
-    sizemap(h >> sizeMapBucketBitSize) += 1
+    sizemap.nn(h >> sizeMapBucketBitSize) += 1
   }
 
   protected final def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
-    sizemap(h >> sizeMapBucketBitSize) -= 1
+    sizemap.nn(h >> sizeMapBucketBitSize) -= 1
   }
 
   protected final def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
     val nsize = calcSizeMapSize(tableLength)
-    if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
+    if (sizemap.nn.length != nsize) sizemap = new Array[Int](nsize)
     else java.util.Arrays.fill(sizemap, 0)
   }
 
@@ -331,18 +334,18 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
         var e = tbl(tableidx)
         while (e ne null) {
           currbucketsize += 1
-          e = e.next
+          e = e.nn.next
         }
         tableidx += 1
       }
-      sizemap(bucketidx) = currbucketsize
+      sizemap.nn(bucketidx) = currbucketsize
       tableuntil += sizeMapBucketSize
       bucketidx += 1
     }
   }
 
   private[collection] def printSizeMap() = {
-    println(sizemap.to(collection.immutable.List))
+    println(sizemap.nn.to(collection.immutable.List))
   }
 
   protected final def sizeMapDisable() = sizemap = null
@@ -366,7 +369,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     (improve(hcode, seedvalue) >>> exponent) & ones
   }
 
-  def initWithContents(c: HashTable.Contents[A, Entry]) = {
+  def initWithContents(c: HashTable.Contents[A, Entry] | Null) = {
     if (c != null) {
       _loadFactor = c.loadFactor
       table = c.table
@@ -428,13 +431,13 @@ private[collection] object HashTable {
    */
   private[collection] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
 
-  class Contents[A, Entry >: Null <: HashEntry[A, Entry]](
+  class Contents[A, Entry <: HashEntry[A, Entry]](
     val loadFactor: Int,
-    val table: Array[HashEntry[A, Entry]],
+    val table: Array[HashEntry[A, Entry] | Null],
     val tableSize: Int,
     val threshold: Int,
     val seedvalue: Int,
-    val sizemap: Array[Int]
+    val sizemap: Array[Int] | Null
   ) {
     import strawman.collection.DebugUtils._
     private[collection] def debugInformation = buildString {
@@ -446,7 +449,7 @@ private[collection] object HashTable {
       append("Load factor: " + loadFactor)
       append("Seedvalue: " + seedvalue)
       append("Threshold: " + threshold)
-      append("Sizemap: [" + arrayString(sizemap, 0, sizemap.length) + "]")
+      append("Sizemap: [" + arrayString(sizemap.nn, 0, sizemap.nn.length) + "]")
     }
   }
 
