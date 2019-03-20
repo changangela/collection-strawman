@@ -431,7 +431,7 @@ private[collection] object HashTable {
    */
   private[collection] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
 
-  class Contents[A, Entry <: HashEntry[A, Entry]](
+  class Contents[A, Entry >: Null <: HashEntry[A, Entry] | Null](
     val loadFactor: Int,
     val table: Array[HashEntry[A, Entry] | Null],
     val tableSize: Int,
