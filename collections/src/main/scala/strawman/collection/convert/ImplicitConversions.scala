@@ -47,7 +47,7 @@ trait ToScalaImplicits {
   /** Implicitly converts a Java `Set` to a Scala mutable `Set`.
    *  @see [[AsScalaConverters.asScalaSet]]
    */
-  implicit def `set asScala`[A](s: ju.Set[A]): mutable.Set[A | Null] = asScalaSet(s)
+  implicit def `set asScala`[A](s: ju.Set[A]): mutable.Set[A | Null] = asScalaSet(s.asInstanceOf[ju.Set[A | Null]])
 
   /** Implicitly converts a Java `Map` to a Scala mutable `Map`.
    *  @see [[AsScalaConverters.mapAsScalaMap]]

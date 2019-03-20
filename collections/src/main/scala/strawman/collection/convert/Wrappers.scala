@@ -120,7 +120,7 @@ private[collection] trait Wrappers {
       while(it.hasNext) {
         val e = it.next()
         it.remove()
-        val es = f(e)
+        val es = f(e.nn)
         es.iterator().foreach(it.add)
       }
       this
@@ -130,13 +130,13 @@ private[collection] trait Wrappers {
       insertAll(from, patch)
       this
     }
-    def filterInPlace(p: A => Boolean): this.type = { underlying.removeIf((x => p(x)): Predicate[A]); this }
+    def filterInPlace(p: A | Null => Boolean): this.type = { underlying.removeIf((x => p(x)): Predicate[A]); this }
     def remove(from: Int, n: Int): Unit = underlying.subList(from, from+n).clear()
     def mapInPlace(f: A => A): this.type = {
       val it = underlying.listIterator()
       while(it.hasNext()) {
         val e = it.next()
-        val e2 = f(e)
+        val e2 = f(e.nn)
         if(e2.asInstanceOf[AnyRef] ne e.asInstanceOf[AnyRef]) it.set(e2)
       }
       this
@@ -188,7 +188,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.Set[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
+  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A | Null] with mutable.Set[A] with mutable.SetOps[A | Null, mutable.Set, mutable.Set[A | Null]] {
 
     override def size = underlying.size
 
@@ -357,7 +357,7 @@ private[collection] trait Wrappers {
     */
   @SerialVersionUID(3L)
   class JMapWrapper[A, B](val underlying : ju.Map[A, B])
-    extends AbstractJMapWrapper[A, B] {
+    extends AbstractJMapWrapper[A, B | Null] {
     override def empty = new JMapWrapper(new ju.HashMap[A, B])
   }
 
@@ -390,7 +390,7 @@ private[collection] trait Wrappers {
     */
   @SerialVersionUID(3L)
   case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B])
-    extends AbstractJMapWrapper[A, B]
+    extends AbstractJMapWrapper[A, B | Null]
       with concurrent.Map[A, B] {
 
     override def get(k: A) = Option(underlying get k)
@@ -458,8 +458,8 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JPropertiesWrapper(underlying: ju.Properties) extends mutable.AbstractMap[String, String]
-    with mutable.MapOps[String, String, mutable.Map, mutable.Map[String, String]] {
+  case class JPropertiesWrapper(underlying: ju.Properties) extends mutable.AbstractMap[String, String | Null]
+    with mutable.MapOps[String, String, mutable.Map, mutable.Map[String, String | Null]] {
 
     override def size = underlying.size
 

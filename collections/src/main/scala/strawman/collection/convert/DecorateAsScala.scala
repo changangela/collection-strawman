@@ -58,7 +58,7 @@ trait DecorateAsScala extends AsScalaConverters {
    * @see [[asScalaSet]]
    */
   implicit def asScalaSetConverter[A](s : ju.Set[A]): AsScala[mutable.Set[A | Null]] =
-    new AsScala(asScalaSet(s))
+    new AsScala(asScalaSet(s.asInstanceOf[ju.Set[A | Null]]))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Map` to a Scala mutable `Map`.

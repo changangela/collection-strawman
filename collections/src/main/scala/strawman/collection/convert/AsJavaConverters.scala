@@ -118,7 +118,7 @@ trait AsJavaConverters {
    * @return  A Java `List` view of the argument.
    */
   def mutableSeqAsJavaList[A](s: mutable.Seq[A]): ju.List[A] = s match {
-    case JListWrapper(wrapped)  => wrapped
+    case JListWrapper(wrapped)  => wrapped.asInstanceOf[ju.List[A]]
     case _                      => new MutableSeqWrapper(s)
   }
 
@@ -153,7 +153,7 @@ trait AsJavaConverters {
    * @return  A Java `Set` view of the argument.
    */
   def mutableSetAsJavaSet[A](s: mutable.Set[A]): ju.Set[A] = s match {
-    case JSetWrapper(wrapped) => wrapped
+    case JSetWrapper(wrapped) => wrapped.asInstanceOf[ju.Set[A]]
     case _                    => new MutableSetWrapper(s)
   }
 

@@ -122,7 +122,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable `Buffer` view of the argument.
    */
   implicit def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A | Null] = l match {
-    case MutableBufferWrapper(wrapped)  => wrapped
+    case MutableBufferWrapper(wrapped)  => wrapped.asInstanceOf[mutable.Buffer[A | Null]]
     case _                              => new JListWrapper(l)
   }
 
@@ -140,8 +140,8 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable Set view of the argument.
    */
   implicit def asScalaSet[A](s: ju.Set[A]): mutable.Set[A | Null] = s match {
-    case MutableSetWrapper(wrapped) => wrapped
-    case _                          => new JSetWrapper(s)
+    case MutableSetWrapper(wrapped) => wrapped.asInstanceOf[mutable.Set[A | Null]]
+    case _                          => new JSetWrapper(s.asInstanceOf[ju.Set[A | Null]])
   }
 
   /**
@@ -165,7 +165,7 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable Map view of the argument.
    */
   implicit def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B | Null] = m match {
-    case MutableMapWrapper(wrapped) => wrapped
+    case MutableMapWrapper(wrapped) => wrapped.asInstanceOf[mutable.Map[A, B | Null]]
     case _                          => new JMapWrapper(m)
   }
 
@@ -183,8 +183,8 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
   implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B | Null] = m match {
-    case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
-    case _                                => new JConcurrentMapWrapper(m)
+    case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying.asInstanceOf[concurrent.Map[A, B | Null]]
+    case _                                => new JConcurrentMapWrapper(m.asInstanceOf[juc.ConcurrentMap[A, B | Null]])
   }
 
   /**
@@ -199,8 +199,8 @@ private[convert] trait LowPriorityWrapAsScala {
    * @return  A Scala mutable Map view of the argument.
    */
   implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B | Null] = p match {
-    case DictionaryWrapper(wrapped) => wrapped
-    case _                          => new JDictionaryWrapper(p)
+    case DictionaryWrapper(wrapped) => wrapped.asInstanceOf[mutable.Map[A, B | Null]]
+    case _                          => new JDictionaryWrapper(p.asInstanceOf[ju.Dictionary[A, B | Null]])
   }
 
   /**

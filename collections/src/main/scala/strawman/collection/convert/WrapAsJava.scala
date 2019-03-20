@@ -121,7 +121,7 @@ private[convert] trait LowPriorityWrapAsJava {
    * @return A Java List view of the argument.
    */
   implicit def bufferAsJavaList[A](b: mutable.Buffer[A]): ju.List[A] = b match {
-    case JListWrapper(wrapped)  => wrapped
+    case JListWrapper(wrapped)  => wrapped.asInstanceOf[ju.List[A]]
     case _                      => new MutableBufferWrapper(b)
   }
 
@@ -139,7 +139,7 @@ private[convert] trait LowPriorityWrapAsJava {
    * @return    A Java List view of the argument.
    */
   implicit def mutableSeqAsJavaList[A](seq: mutable.Seq[A]): ju.List[A] = seq match {
-    case JListWrapper(wrapped)  => wrapped
+    case JListWrapper(wrapped)  => wrapped.asInstanceOf[ju.List[A]]
     case _                      => new MutableSeqWrapper(seq)
   }
 
