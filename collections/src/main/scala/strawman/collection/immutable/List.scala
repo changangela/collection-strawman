@@ -9,7 +9,8 @@ import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer, ReusableBuilder}
 
 import scala.{Any, AnyRef, Boolean, Function1, IndexOutOfBoundsException, Int, NoSuchElementException, Nothing, PartialFunction, SerialVersionUID, Serializable, Unit, UnsupportedOperationException, `inline`, transient, Some, None}
-
+import scala.Null
+import scala.ExplicitNulls._
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -226,15 +227,15 @@ sealed abstract class List[+A]
   final override def collect[B](pf: PartialFunction[A, B]): List[B] = {
     if (this eq Nil) Nil else {
       var rest = this
-      var h: ::[B] = null
+      var h: ::[B] | Null = null
       // Special case for first element
       do {
         val x: Any = pf.applyOrElse(rest.head, List.partialNotApplied)
         if (x.asInstanceOf[AnyRef] ne List.partialNotApplied) h = new ::(x.asInstanceOf[B], Nil)
         rest = rest.tail
-        if (rest eq Nil) return if (h eq null) Nil else h
+        if (rest eq Nil) return if (h eq null) Nil else h.nn
       } while (h eq null)
-      var t = h
+      var t = h.nn
       // Remaining elements
       do {
         val x: Any = pf.applyOrElse(rest.head, List.partialNotApplied)
@@ -245,7 +246,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       } while (rest ne Nil)
-      h
+      h.nn
     }
   }
 
@@ -253,8 +254,8 @@ sealed abstract class List[+A]
     if (this eq Nil) Nil else {
       var rest = this
       var found = false
-      var h: ::[B] = null
-      var t: ::[B] = null
+      var h: ::[B] | Null = null
+      var t: ::[B] | Null = null
       while (rest ne Nil) {
         f(rest.head).iterator().foreach { b =>
           if (!found) {
@@ -264,13 +265,13 @@ sealed abstract class List[+A]
           }
           else {
             val nx = new ::(b, Nil)
-            t.next = nx
+            t.nn.next = nx
             t = nx
           }
         }
         rest = rest.tail
       }
-      if (!found) Nil else h
+      if (!found) Nil else h.nn
     }
   }
 
@@ -355,11 +356,11 @@ sealed abstract class List[+A]
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
     // If any successful optimization attempts or other changes are made, please rehash them there too.
     //@tailrec
-    def loop(mappedHead: List[B] = Nil, mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] = {
+    def loop(mappedHead: List[B] | Null = Nil, mappedLast: ::[B] | Null, unchanged: List[A], pending: List[A]): List[B] = {
       if (pending.isEmpty) {
         if (mappedHead eq null) unchanged
         else {
-          mappedLast.next = (unchanged: List[B])
+          mappedLast.nn.next = (unchanged: List[B])
           mappedHead
         }
       }
@@ -371,18 +372,18 @@ sealed abstract class List[+A]
           loop(mappedHead, mappedLast, unchanged, pending.tail)
         else {
           var xc = unchanged
-          var mappedHead1: List[B] = mappedHead
-          var mappedLast1: ::[B] = mappedLast
+          var mappedHead1: List[B] | Null = mappedHead
+          var mappedLast1: ::[B] | Null = mappedLast
           while (xc ne pending) {
             val next = new ::[B](xc.head, Nil)
             if (mappedHead1 eq null) mappedHead1 = next
-            if (mappedLast1 ne null) mappedLast1.next = next
+            if (mappedLast1 ne null) mappedLast1.nn.next = next
             mappedLast1 = next
             xc = xc.tail
           }
           val next = new ::(head1, Nil)
           if (mappedHead1 eq null) mappedHead1 = next
-          if (mappedLast1 ne null) mappedLast1.next = next
+          if (mappedLast1 ne null) mappedLast1.nn.next = next
           mappedLast1 = next
           val tail0 = pending.tail
           loop(mappedHead1, mappedLast1, tail0, tail0)
