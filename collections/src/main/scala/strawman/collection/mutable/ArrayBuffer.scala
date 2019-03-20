@@ -6,6 +6,8 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
 
 import scala.{AnyRef, Array, ArrayIndexOutOfBoundsException, Boolean, Exception, Int, `inline`, Long, StringContext, Unit, math, Any, throws, Serializable, SerialVersionUID}
 import scala.Predef.intWrapper
+import scala.Null
+import scala.ExplicitNulls.ArrayUtils.ArrayExtensions
 
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
@@ -30,7 +32,7 @@ import scala.Predef.intWrapper
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
+class ArrayBuffer[A] private (initElems: Array[AnyRef | Null], initSize: Int)
   extends AbstractBuffer[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
@@ -38,11 +40,11 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with Serializable {
 
-  def this() = this(new Array[AnyRef](16), 0)
+  def this() = this(new Array[AnyRef | Null](16), 0)
 
-  def this(initSize: Int) = this(new Array[AnyRef](initSize), 0)
+  def this(initSize: Int) = this(Array.ofNulls[AnyRef | Null](initSize), 0)
 
-  protected var array: Array[AnyRef] = initElems
+  protected var array: Array[AnyRef | Null] = initElems
   protected var size0 = initSize
 
   /** Ensure that the internal array has at least `n` cells. */
@@ -185,7 +187,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   // Avoid reallocation of buffer if length is known.
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
-      val array = new Array[AnyRef](coll.knownSize)
+      val array = Array.ofNulls[AnyRef | Null](coll.knownSize)
       val it = coll.iterator()
       for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, array.length)
@@ -200,7 +202,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 
-class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {
+class ArrayBufferView[A](val array: Array[AnyRef | Null], val length: Int) extends IndexedView[A] {
   @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
   override def className = "ArrayBufferView"
@@ -209,7 +211,7 @@ class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends Inde
 /** An object used internally by collections backed by an extensible Array[AnyRef] */
 object RefArrayUtils {
 
-  def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
+  def ensureSize(array: Array[AnyRef | Null], end: Int, n: Int): Array[AnyRef | Null] = {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     def growArray = {
@@ -222,7 +224,7 @@ object RefArrayUtils {
         newSize = Int.MaxValue
       }
 
-      val newArray: Array[AnyRef] = new Array(newSize.toInt)
+      val newArray: Array[AnyRef | Null] = new Array(newSize.toInt)
       Array.copy(array, 0, newArray, 0, end)
       newArray
     }
@@ -231,7 +233,7 @@ object RefArrayUtils {
 
   /** Remove elements of this array at indices after `sz`.
    */
-  def nullElems(array: Array[AnyRef], start: Int, end: Int): Unit = {
+  def nullElems(array: Array[AnyRef | Null], start: Int, end: Int): Unit = {
     // Maybe use `fill` instead?
     var i = start
     while (i < end) {
