@@ -10,6 +10,7 @@ package strawman.collection
 package mutable
 
 import scala.{Array, AnyRef, Boolean, Int, Option, None, Some, SerialVersionUID, Serializable, `inline`, deprecated}
+import scala.Null
 
 import strawman.collection.toNewSeq
 
@@ -29,7 +30,7 @@ import strawman.collection.toNewSeq
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
+class Queue[A] protected (array: Array[AnyRef | Null], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedSeqOps[A, Queue, Queue[A]]
@@ -112,7 +113,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     bf.result()
   }
 
-  override protected def ofArray(array: Array[AnyRef], end: Int): Queue[A] =
+  override protected def ofArray(array: Array[AnyRef | Null], end: Int): Queue[A] =
     new Queue(array, start = 0, end)
 
 }
