@@ -481,7 +481,7 @@ object HashMap extends MapFactory[HashMap] {
       }
     }
 
-    override def iterator(): Iterator[(K, V)] = new TrieIterator[(K, V)](elems.asInstanceOf[Array[Iterable[(K, V)]]]) {
+    override def iterator(): Iterator[(K, V)] = new TrieIterator[(K, V)](elems.asInstanceOf[Array[Iterable[(K, V)] | Null]]) {
       final override def getElem(cc: AnyRef): (K, V) = cc.asInstanceOf[HashMap1[K, V]].ensurePair
     }
 

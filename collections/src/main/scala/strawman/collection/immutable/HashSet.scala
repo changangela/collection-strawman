@@ -509,7 +509,7 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def size = size0
 
-    def iterator(): Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
+    def iterator(): Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A] | Null]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
 
