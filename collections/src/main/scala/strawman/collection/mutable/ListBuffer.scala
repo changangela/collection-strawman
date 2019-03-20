@@ -11,6 +11,9 @@ import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
 import scala.Predef.{assert, intWrapper}
 
+import scala.Null
+import scala.ExplicitNulls._
+
 /** A `Buffer` implementation backed by a list. It provides constant time
   *  prepend and append. Most other operations are linear.
   *
@@ -39,7 +42,7 @@ class ListBuffer[A]
      with Serializable {
 
   private var first: List[A] = Nil
-  private var last0: ::[A] = null
+  private var last0: ::[A] | Null = null
   private var aliased = false
   private var len = 0
 
@@ -82,7 +85,7 @@ class ListBuffer[A]
     if (isEmpty) xs
     else {
       ensureUnaliased()
-      last0.next = xs
+      last0.nn.next = xs
       toList
     }
   }
@@ -97,7 +100,7 @@ class ListBuffer[A]
   def addOne(elem: A): this.type = {
     ensureUnaliased()
     val last1 = (elem :: Nil).asInstanceOf[::[A]]
-    if (len == 0) first = last1 else last0.next = last1
+    if (len == 0) first = last1 else last0.nn.next = last1
     last0 = last1
     len += 1
     this
@@ -135,7 +138,7 @@ class ListBuffer[A]
       last0 = null
   }
 
-  private def locate(i: Int): Predecessor[A] =
+  private def locate(i: Int): Predecessor[A] | Null =
     if (i == 0) null
     else if (i == len) last0
     else {
@@ -148,10 +151,10 @@ class ListBuffer[A]
       p.asInstanceOf[Predecessor[A]]
     }
 
-  private def getNext(p: Predecessor[A]): List[A] =
+  private def getNext(p: Predecessor[A] | Null): List[A] =
     if (p == null) first else p.next
 
-  private def setNext(p: Predecessor[A], nx: List[A]): Unit =
+  private def setNext(p: Predecessor[A] | Null, nx: List[A]): Unit =
     if (p == null) first = nx else p.next = nx
 
   def update(idx: Int, elem: A): Unit = {
@@ -169,6 +172,7 @@ class ListBuffer[A]
       val p = locate(idx)
       setNext(p, elem :: getNext(p))
       len += 1
+      len += 1
     }
   }
 
@@ -177,7 +181,7 @@ class ListBuffer[A]
     this
   }
 
-  private def insertAfter(p: Predecessor[A], it: Iterator[A]): Predecessor[A] = {
+  private def insertAfter(p: Predecessor[A] | Null, it: Iterator[A]): Predecessor[A] | Null = {
     var prev = p
     val follow = getNext(prev)
     while (it.hasNext) {
@@ -219,7 +223,7 @@ class ListBuffer[A]
       throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
-  private def removeAfter(prev: Predecessor[A], n: Int) = {
+  private def removeAfter(prev: Predecessor[A] | Null, n: Int) = {
     @tailrec def ahead(p: List[A], n: Int): List[A] =
       if (n == 0) p else ahead(p.tail, n - 1)
     setNext(prev, ahead(getNext(prev), n))
@@ -237,7 +241,7 @@ class ListBuffer[A]
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     ensureUnaliased()
-    var prev: Predecessor[A] = null
+    var prev: Predecessor[A] | Null = null
     var cur: List[A] = first
     while (!cur.isEmpty) {
       val follow = cur.tail
@@ -251,7 +255,7 @@ class ListBuffer[A]
 
   def filterInPlace(p: A => Boolean): this.type = {
     ensureUnaliased()
-    var prev: Predecessor[A] = null
+    var prev: Predecessor[A] | Null = null
     var cur: List[A] = first
     while (!cur.isEmpty) {
       val follow = cur.tail
