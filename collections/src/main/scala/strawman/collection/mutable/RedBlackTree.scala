@@ -7,6 +7,9 @@ import collection.Iterator
 import scala.{Boolean, `inline`, Int, None, NoSuchElementException, NullPointerException, Option, Ordering, Serializable, SerialVersionUID, Some, Unit, throws}
 import java.lang.String
 
+import scala.Null
+import scala.ExplicitNulls._
+
 /**
  * An object containing the red-black tree implementation used by mutable `TreeMaps`.
  *
@@ -26,11 +29,11 @@ private[collection] object RedBlackTree {
   // on the size of the range.
 
   @SerialVersionUID(3L)
-  final class Tree[A, B](var root: Node[A, B], var size: Int) extends Serializable
+  final class Tree[A, B](var root: Node[A, B] | Null, var size: Int) extends Serializable
 
   @SerialVersionUID(3L)
   final class Node[A, B](var key: A, var value: B, var red: Boolean,
-                         var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) extends Serializable {
+                         var left: Node[A, B] | Null, var right: Node[A, B] | Null, var parent: Node[A, B] | Null) extends Serializable {
 
     override def toString: String = "Node(" + key + ", " + value + ", " + red + ", " + left + ", " + right + ")"
   }
@@ -45,7 +48,7 @@ private[collection] object RedBlackTree {
                             left: Node[A, B], right: Node[A, B], parent: Node[A, B]): Node[A, B] =
       new Node(key, value, red, left, right, parent)
 
-    @`inline` def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B]): Node[A, B] =
+    @`inline` def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B] | Null): Node[A, B] =
       new Node(key, value, red, null, null, parent)
 
     def unapply[A, B](t: Node[A, B]) = Some((t.key, t.value, t.left, t.right, t.parent))
@@ -53,12 +56,12 @@ private[collection] object RedBlackTree {
 
   // ---- getters ----
 
-  def isRed(node: Node[_, _]) = (node ne null) && node.red
-  def isBlack(node: Node[_, _]) = (node eq null) || !node.red
+  inline def isRed(node: Node[_, _] | Null) = (node ne null) && node.nn.red
+  inline def isBlack(node: Node[_, _] | Null) = (node eq null) || !node.nn.red
 
   // ---- size ----
 
-  def size(node: Node[_, _]): Int = if (node eq null) 0 else 1 + size(node.left) + size(node.right)
+  def size(node: Node[_, _] | Null): Int = if (node eq null) 0 else 1 + size(node.left) + size(node.right)
   def size(tree: Tree[_, _]): Int = tree.size
   def isEmpty(tree: Tree[_, _]) = tree.root eq null
   def clear(tree: Tree[_, _]): Unit = { tree.root = null; tree.size = 0 }
@@ -67,16 +70,16 @@ private[collection] object RedBlackTree {
 
   def get[A: Ordering, B](tree: Tree[A, B], key: A): Option[B] = getNode(tree.root, key) match {
     case null => None
-    case node => Some(node.value)
+    case node => Some(node.nn.value)
   }
 
   def getKey[A : Ordering](tree: Tree[A, _], key: A): Option[A] =
     getNode(tree.root, key) match {
       case null => None
-      case node => Some(node.key)
+      case node => Some(node.nn.key)
     }
 
-  @tailrec private[this] def getNode[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] =
+  @tailrec private[this] def getNode[A, B](node: Node[A, B] | Null, key: A)(implicit ord: Ordering[A]): Node[A, B] | Null =
     if (node eq null) null
     else {
       val cmp = ord.compare(key, node.key)
@@ -89,35 +92,35 @@ private[collection] object RedBlackTree {
 
   def min[A, B](tree: Tree[A, B]): Option[(A, B)] = minNode(tree.root) match {
     case null => None
-    case node => Some((node.key, node.value))
+    case node => Some((node.nn.key, node.nn.value))
   }
 
   def minKey[A](tree: Tree[A, _]): Option[A] = minNode(tree.root) match {
     case null => None
-    case node => Some(node.key)
+    case node => Some(node.nn.key)
   }
 
-  private def minNode[A, B](node: Node[A, B]): Node[A, B] =
+  private def minNode[A, B](node: Node[A, B] | Null): Node[A, B] | Null =
     if (node eq null) null else minNodeNonNull(node)
 
   @tailrec def minNodeNonNull[A, B](node: Node[A, B]): Node[A, B] =
-    if (node.left eq null) node else minNodeNonNull(node.left)
+    if (node.left eq null) node else minNodeNonNull(node.left.nn)
 
   def max[A, B](tree: Tree[A, B]): Option[(A, B)] = maxNode(tree.root) match {
     case null => None
-    case node => Some((node.key, node.value))
+    case node => Some((node.nn.key, node.nn.value))
   }
 
   def maxKey[A](tree: Tree[A, _]): Option[A] = maxNode(tree.root) match {
     case null => None
-    case node => Some(node.key)
+    case node => Some(node.nn.key)
   }
 
-  private def maxNode[A, B](node: Node[A, B]): Node[A, B] =
+  private def maxNode[A, B](node: Node[A, B] | Null): Node[A, B] | Null =
     if (node eq null) null else maxNodeNonNull(node)
 
   @tailrec def maxNodeNonNull[A, B](node: Node[A, B]): Node[A, B] =
-    if (node.right eq null) node else maxNodeNonNull(node.right)
+    if (node.right eq null) node else maxNodeNonNull(node.right.nn)
 
   /**
    * Returns the first (lowest) map entry with a key equal or greater than `key`. Returns `None` if there is no such
@@ -126,27 +129,27 @@ private[collection] object RedBlackTree {
   def minAfter[A, B](tree: Tree[A, B], key: A)(implicit ord: Ordering[A]): Option[(A, B)] =
     minNodeAfter(tree.root, key) match {
       case null => None
-      case node => Some((node.key, node.value))
+      case node => Some((node.nn.key, node.nn.value))
     }
 
   def minKeyAfter[A](tree: Tree[A, _], key: A)(implicit ord: Ordering[A]): Option[A] =
     minNodeAfter(tree.root, key) match {
       case null => None
-      case node => Some(node.key)
+      case node => Some(node.nn.key)
     }
 
-  private[this] def minNodeAfter[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] = {
+  private[this] def minNodeAfter[A, B](node: Node[A, B] | Null, key: A)(implicit ord: Ordering[A]): Node[A, B] | Null = {
     if (node eq null) null
     else {
-      var y: Node[A, B] = null
-      var x = node
+      var y: Node[A, B] | Null = null
+      var x: Node[A, B] | Null = node
       var cmp = 1
       while ((x ne null) && cmp != 0) {
         y = x
-        cmp = ord.compare(key, x.key)
-        x = if (cmp < 0) x.left else x.right
+        cmp = ord.compare(key, x.nn.key)
+        x = if (cmp < 0) x.nn.left else x.nn.right
       }
-      if (cmp <= 0) y else successor(y)
+      if (cmp <= 0) y else successor(y.nn)
     }
   }
 
@@ -156,49 +159,49 @@ private[collection] object RedBlackTree {
   def maxBefore[A, B](tree: Tree[A, B], key: A)(implicit ord: Ordering[A]): Option[(A, B)] =
     maxNodeBefore(tree.root, key) match {
       case null => None
-      case node => Some((node.key, node.value))
+      case node => Some((node.nn.key, node.nn.value))
     }
 
   def maxKeyBefore[A](tree: Tree[A, _], key: A)(implicit ord: Ordering[A]): Option[A] =
     maxNodeBefore(tree.root, key) match {
       case null => None
-      case node => Some(node.key)
+      case node => Some(node.nn.key)
     }
 
-  private[this] def maxNodeBefore[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] = {
+  private[this] def maxNodeBefore[A, B](node: Node[A, B] | Null, key: A)(implicit ord: Ordering[A]): Node[A, B] | Null = {
     if (node eq null) null
     else {
-      var y: Node[A, B] = null
-      var x = node
+      var y: Node[A, B] | Null = null
+      var x: Node[A, B] | Null = node
       var cmp = 1
       while ((x ne null) && cmp != 0) {
         y = x
-        cmp = ord.compare(key, x.key)
-        x = if (cmp < 0) x.left else x.right
+        cmp = ord.compare(key, x.nn.key)
+        x = if (cmp < 0) x.nn.left else x.nn.right
       }
-      if (cmp > 0) y else predecessor(y)
+      if (cmp > 0) y else predecessor(y.nn)
     }
   }
 
   // ---- insertion ----
 
   def insert[A, B](tree: Tree[A, B], key: A, value: B)(implicit ord: Ordering[A]): Unit = {
-    var y: Node[A, B] = null
-    var x = tree.root
+    var y: Node[A, B] | Null = null
+    var x: Node[A, B] | Null = tree.root
     var cmp = 1
     while ((x ne null) && cmp != 0) {
       y = x
-      cmp = ord.compare(key, x.key)
-      x = if (cmp < 0) x.left else x.right
+      cmp = ord.compare(key, x.nn.key)
+      x = if (cmp < 0) x.nn.left else x.nn.right
     }
 
-    if (cmp == 0) y.value = value
+    if (cmp == 0) y.nn.value = value
     else {
       val z = Node.leaf(key, value, red = true, y)
 
       if (y eq null) tree.root = z
-      else if (cmp < 0) y.left = z
-      else y.right = z
+      else if (cmp < 0) y.nn.left = z
+      else y.nn.right = z
 
       fixAfterInsert(tree, z)
       tree.size += 1
@@ -208,41 +211,41 @@ private[collection] object RedBlackTree {
   private[this] def fixAfterInsert[A, B](tree: Tree[A, B], node: Node[A, B]): Unit = {
     var z = node
     while (isRed(z.parent)) {
-      if (z.parent eq z.parent.parent.left) {
-        val y = z.parent.parent.right
+      if (z.parent eq z.parent.nn.parent.nn.left) {
+        val y = z.parent.nn.parent.nn.right
         if (isRed(y)) {
-          z.parent.red = false
+          z.parent.nn.red = false
           y.red = false
-          z.parent.parent.red = true
-          z = z.parent.parent
+          z.parent.nn.parent.nn.red = true
+          z = z.parent.nn.parent.nn
         } else {
-          if (z eq z.parent.right) {
-            z = z.parent
+          if (z eq z.parent.nn.right) {
+            z = z.parent.nn
             rotateLeft(tree, z)
           }
-          z.parent.red = false
-          z.parent.parent.red = true
-          rotateRight(tree, z.parent.parent)
+          z.parent.nn.red = false
+          z.parent.nn.parent.nn.red = true
+          rotateRight(tree, z.parent.nn.parent.nn)
         }
       } else { // symmetric cases
-        val y = z.parent.parent.left
+        val y = z.parent.nn.parent.nn.left
         if (isRed(y)) {
-          z.parent.red = false
+          z.parent.nn.red = false
           y.red = false
-          z.parent.parent.red = true
-          z = z.parent.parent
+          z.parent.nn.parent.nn.red = true
+          z = z.parent.nn.parent.nn
         } else {
-          if (z eq z.parent.left) {
-            z = z.parent
+          if (z eq z.parent.nn.left) {
+            z = z.parent.nn
             rotateRight(tree, z)
           }
-          z.parent.red = false
-          z.parent.parent.red = true
-          rotateLeft(tree, z.parent.parent)
+          z.parent.nn.red = false
+          z.parent.nn.parent.nn.red = true
+          rotateLeft(tree, z.parent.nn.parent.nn)
         }
       }
     }
-    tree.root.red = false
+    tree.root.nn.red = false
   }
 
   // ---- deletion ----
@@ -252,8 +255,8 @@ private[collection] object RedBlackTree {
     if (z ne null) {
       var y = z
       var yIsRed = y.red
-      var x: Node[A, B] = null
-      var xParent: Node[A, B] = null
+      var x: Node[A, B] | Null = null
+      var xParent: Node[A, B] | Null = null
 
       if (z.left eq null) {
         x = z.right
@@ -266,7 +269,7 @@ private[collection] object RedBlackTree {
         xParent = z.parent
       }
       else {
-        y = minNodeNonNull(z.right)
+        y = minNodeNonNull(z.right.nn)
         yIsRed = y.red
         x = y.right
 
@@ -275,11 +278,11 @@ private[collection] object RedBlackTree {
           xParent = y.parent
           transplant(tree, y, y.right)
           y.right = z.right
-          y.right.parent = y
+          y.right.nn.parent = y
         }
         transplant(tree, z, y)
         y.left = z.left
-        y.left.parent = y
+        y.left.nn.parent = y
         y.red = z.red
       }
 
@@ -288,43 +291,43 @@ private[collection] object RedBlackTree {
     }
   }
 
-  private[this] def fixAfterDelete[A, B](tree: Tree[A, B], node: Node[A, B], parent: Node[A, B]): Unit = {
+  private[this] def fixAfterDelete[A, B](tree: Tree[A, B], node: Node[A, B] | Null, parent: Node[A, B] | Null): Unit = {
     var x = node
-    var xParent = parent
+    var xParent : Node[A, B] | Null = parent
     while ((x ne tree.root) && isBlack(x)) {
-      if (x eq xParent.left) {
-        var w = xParent.right
+      if (x eq xParent.nn.left) {
+        var w = xParent.nn.right.nn
         // assert(w ne null)
 
         if (w.red) {
           w.red = false
-          xParent.red = true
+          xParent.nn.red = true
           rotateLeft(tree, xParent)
-          w = xParent.right
+          w = xParent.nn.right.nn
         }
         if (isBlack(w.left) && isBlack(w.right)) {
           w.red = true
           x = xParent
         } else {
           if (isBlack(w.right)) {
-            w.left.red = false
+            w.left.nn.red = false
             w.red = true
             rotateRight(tree, w)
-            w = xParent.right
+            w = xParent.nn.right.nn
           }
-          w.red = xParent.red
-          xParent.red = false
-          w.right.red = false
+          w.red = xParent.asInstanceOf[Node[A, B]].red
+          xParent.nn.red = false
+          w.right.nn.red = false
           rotateLeft(tree, xParent)
           x = tree.root
         }
       } else { // symmetric cases
-        var w = xParent.left
+        var w = xParent.nn.left.nn
         // assert(w ne null)
 
         if (w.red) {
           w.red = false
-          xParent.red = true
+          xParent.nn.red = true
           rotateRight(tree, xParent)
           w = xParent.left
         }
@@ -386,7 +389,7 @@ private[collection] object RedBlackTree {
     }
   }
 
-  private[this] def rotateLeft[A, B](tree: Tree[A, B], x: Node[A, B]): Unit = if (x ne null) {
+  private[this] def rotateLeft[A, B](tree: Tree[A, B], x: Node[A, B] | Null): Unit = if (x ne null) {
     // assert(x.right ne null)
     val y = x.right
     x.right = y.left
@@ -422,7 +425,7 @@ private[collection] object RedBlackTree {
    * Transplant the node `from` to the place of node `to`. This is done by setting `from` as a child of `to`'s previous
    * parent and setting `from`'s parent to the `to`'s previous parent. The children of `from` are left unchanged.
    */
-  private[this] def transplant[A, B](tree: Tree[A, B], to: Node[A, B], from: Node[A, B]): Unit = {
+  private[this] def transplant[A, B](tree: Tree[A, B], to: Node[A, B], from: Node[A, B] | Null): Unit = {
     if (to.parent eq null) tree.root = from
     else if (to eq to.parent.left) to.parent.left = from
     else to.parent.right = from
