@@ -3,6 +3,8 @@ package collection
 package mutable
 
 import scala.{AnyRef, Boolean, Int, None, Option, Serializable, SerialVersionUID, Some, transient, Unit}
+import scala.Null
+import scala.ExplicitNulls._
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
@@ -32,8 +34,8 @@ class LinkedHashSet[A]
 
   type Entry = LinkedHashSet.Entry[A]
 
-  @transient protected var firstEntry: Entry = null
-  @transient protected var lastEntry: Entry = null
+  @transient protected var firstEntry: Entry | Null = null
+  @transient protected var lastEntry: Entry | Null = null
   @transient private[this] var table: HashTable[A, AnyRef, Entry] = newHashTable
 
   private def newHashTable =
@@ -41,15 +43,15 @@ class LinkedHashSet[A]
       def createNewEntry(key: A, value: AnyRef) = {
         val e = new Entry(key)
         if (firstEntry eq null) firstEntry = e
-        else { lastEntry.later = e; e.earlier = lastEntry }
+        else { lastEntry.nn.later = e; e.earlier = lastEntry }
         lastEntry = e
         e
       }
       override def foreachEntry[U](f: Entry => U): Unit = {
         var cur = firstEntry
         while (cur ne null) {
-          f(cur)
-          cur = cur.later
+          f(cur.nn)
+          cur = cur.nn.later
         }
       }
     }
@@ -78,9 +80,9 @@ class LinkedHashSet[A]
     if (e eq null) None
     else {
       if (e.earlier eq null) firstEntry = e.later
-      else e.earlier.later = e.later
+      else e.earlier.nn.later = e.later
       if (e.later eq null) lastEntry = e.earlier
-      else e.later.earlier = e.earlier
+      else e.later.nn.earlier = e.earlier
       e.earlier = null // Null references to prevent nepotism
       e.later = null
       Some(e.key)
@@ -91,15 +93,15 @@ class LinkedHashSet[A]
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
-      if (hasNext) { val res = cur.key; cur = cur.later; res }
+      if (hasNext) { val res = cur.nn.key; cur = cur.nn.later; res }
       else Iterator.empty.next()
   }
 
   override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
-      f(cur.key)
-      cur = cur.later
+      f(cur.nn.key)
+      cur = cur.nn.later
     }
   }
 
@@ -142,8 +144,8 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
    */
   @SerialVersionUID(3L)
   private[strawman] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
-    var earlier: Entry[A] = null
-    var later: Entry[A] = null
+    var earlier: Entry[A] | Null = null
+    var later: Entry[A] | Null = null
   }
 }
 

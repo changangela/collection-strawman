@@ -164,7 +164,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
    *  Returns entry found in table or null.
    *  New entries are created by calling `createNewEntry` method.
    */
-  def findOrAddEntry(key: A, value: B): Entry = {
+  def findOrAddEntry(key: A, value: B | Null): Entry | Null = {
     val h = index(elemHashCode(key))
     val e = findEntry0(key, h)
     if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
@@ -174,7 +174,7 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
    *  This method is guaranteed to be called only once and in case that the entry
    *  will be added. In other words, an implementation may be side-effecting.
    */
-  def createNewEntry(key: A, value: B): Entry
+  def createNewEntry(key: A, value: B | Null): Entry
 
   /** Remove entry from table if present.
    */
