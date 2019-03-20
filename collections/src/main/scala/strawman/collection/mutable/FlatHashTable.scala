@@ -12,6 +12,10 @@ import java.lang.{Integer, ThreadLocal}
 import java.lang.Integer.rotateRight
 import scala.util.hashing.byteswap32
 
+import scala.Null
+import scala.ExplicitNulls._
+import scala.ExplicitNulls.ArrayUtils.ArrayExtensions
+
 /** An implementation class backing a `HashSet`.
  *
  *  This trait is used internally. It can be mixed in with various collections relying on
@@ -30,7 +34,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
 
   /** The actual hash table.
    */
-  var table: Array[AnyRef] = new Array(initialCapacity)
+  var table: Array[AnyRef | Null] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
@@ -42,7 +46,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
 
   /** The array keeping track of number of elements in 32 element blocks.
    */
-  protected var sizemap: Array[Int] = null
+  protected var sizemap: Array[Int] | Null = null
 
   protected var seedvalue: Int = tableSizeSeed
 
@@ -65,7 +69,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
    *
    * The serialization format expected is the one produced by `serializeTo`.
    */
-  def init(in: java.io.ObjectInputStream, f: A => Unit): Unit = {
+  def init(in: java.io.ObjectInputStream, f: A | Null => Unit): Unit = {
     _loadFactor = in.readInt()
     assert(_loadFactor > 0)
 
@@ -107,7 +111,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
   def findEntry(elem: A): Option[A] =
     findElemImpl(elem) match {
       case null => None
-      case entry => Some(entryToElem(entry))
+      case entry => Some(entryToElem(entry).nn)
     }
 
 
@@ -116,7 +120,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
     null != findElemImpl(elem)
   }
 
-  private def findElemImpl(elem: A): AnyRef = {
+  private def findElemImpl(elem: A): AnyRef | Null = {
     val searchEntry = elemToEntry(elem)
     var h = index(searchEntry.hashCode)
     var curEntry = table(h)
@@ -130,7 +134,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
   /** Add elem if not yet in table.
    *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
-  def addElem(elem: A) : Boolean = {
+  def addElem(elem: A | Null) : Boolean = {
     addEntry(elemToEntry(elem))
   }
 
@@ -203,13 +207,13 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
       i < table.length
     }
     def next(): A =
-      if (hasNext) { i += 1; entryToElem(table(i - 1)) }
+      if (hasNext) { i += 1; entryToElem(table(i - 1)).nn }
       else Iterator.empty.next()
   }
 
   private def growTable() = {
     val oldtable = table
-    table = new Array[AnyRef](table.length * 2)
+    table = Array.ofNulls[AnyRef | Null](table.length * 2)
     tableSize = 0
     nnSizeMapReset(table.length)
     seedvalue = tableSizeSeed
@@ -225,7 +229,7 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
 
   private def checkConsistent() = {
     for (i <- 0 until table.length)
-      if (table(i) != null && !containsElem(entryToElem(table(i))))
+      if (table(i) != null && !containsElem(entryToElem(table(i)).nn))
         assert(assertion = false, i+" "+table(i)+" "+table.mkString)
   }
 
@@ -247,16 +251,16 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
    */
   protected final def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
     val p = h >> sizeMapBucketBitSize
-    sizemap(p) += 1
+    sizemap.nn(p) += 1
   }
 
   protected final def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
-    sizemap(h >> sizeMapBucketBitSize) -= 1
+    sizemap.nn(h >> sizeMapBucketBitSize) -= 1
   }
 
   protected final def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
     val nsize = calcSizeMapSize(tableLength)
-    if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
+    if (sizemap.nn.length != nsize) sizemap = new Array[Int](nsize)
     else java.util.Arrays.fill(sizemap, 0)
   }
 
@@ -286,14 +290,14 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
         if (tbl(tableidx) ne null) currbucketsz += 1
         tableidx += 1
       }
-      sizemap(bucketidx) = currbucketsz
+      sizemap.nn(bucketidx) = currbucketsz
       tableuntil += sizeMapBucketSize
       bucketidx += 1
     }
   }
 
   private[collection] def printSizeMap() = {
-    println(sizemap.mkString("szmap: [", ", ", "]"))
+    println(sizemap.nn.mkString("szmap: [", ", ", "]"))
   }
 
   private[collection] def printContents() = {
@@ -392,11 +396,11 @@ private[collection] object FlatHashTable {
 
   class Contents[A](
     val loadFactor: Int,
-    val table: Array[AnyRef],
+    val table: Array[AnyRef | Null],
     val tableSize: Int,
     val threshold: Int,
     val seedvalue: Int,
-    val sizemap: Array[Int]
+    val sizemap: Array[Int] | Null
   )
 
   trait HashUtils[A] {
@@ -410,13 +414,13 @@ private[collection] object FlatHashTable {
      * Elems have type A, but we store AnyRef in the table. Plus we need to deal with
      * null elems, which need to be stored as NullSentinel
      */
-    protected final def elemToEntry(elem : A) : AnyRef =
+    protected final def elemToEntry(elem : A | Null) : AnyRef =
       if (null == elem) NullSentinel else elem.asInstanceOf[AnyRef]
 
     /**
      * Does the inverse translation of elemToEntry
      */
-    final def entryToElem(entry : AnyRef) : A =
+    final def entryToElem(entry : AnyRef | Null) : A | Null =
       (if (entry.isInstanceOf[NullSentinel.type]) null else entry).asInstanceOf[A]
   }
 
