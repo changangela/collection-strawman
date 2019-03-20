@@ -10,6 +10,8 @@ import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
 import scala.Predef.intWrapper
+import scala.Null
+import scala.ExplicitNulls._
 import java.util.Arrays
 
 /**
@@ -177,14 +179,14 @@ object ImmutableArray extends StrictOptimizedClassTagSeqFactory[ImmutableArray] 
   }).asInstanceOf[ImmutableArray[T]]
 
   @SerialVersionUID(3L)
-  final class ofRef[T <: AnyRef](val unsafeArray: Array[T]) extends ImmutableArray[T] with Serializable {
-    lazy val elemTag = ClassTag[T](unsafeArray.getClass.getComponentType)
+  final class ofRef[T <: AnyRef | Null](val unsafeArray: Array[T]) extends ImmutableArray[T] with Serializable {
+    lazy val elemTag = ClassTag[T](unsafeArray.getClass.getComponentType.nn)
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): T = unsafeArray(i)
     override def hashCode = MurmurHash3.arrayHash(unsafeArray)
     override def equals(that: Any) = that match {
-      case that: ofRef[_] => Arrays.equals(unsafeArray.asInstanceOf[Array[AnyRef]], that.unsafeArray.asInstanceOf[Array[AnyRef]])
+      case that: ofRef[_] => Arrays.equals(unsafeArray.asInstanceOf[Array[AnyRef | Null]], that.unsafeArray.asInstanceOf[Array[AnyRef | Null]])
       case _ => super.equals(that)
     }
   }
