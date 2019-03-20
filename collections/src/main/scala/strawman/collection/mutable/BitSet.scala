@@ -8,6 +8,8 @@ import BitSetOps.{LogWL, MaxSize}
 import scala.{Array, Int, Long, math, None, Option, Ordering, SerialVersionUID, Serializable, Some, Unit}
 import scala.Predef.{require}
 
+import scala.ExplicitNulls._
+
 /**
   * A class for mutable bitsets.
   *
@@ -137,7 +139,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   }
 
   override def clone(): BitSet =
-    new BitSet(java.util.Arrays.copyOf(elems, elems.length))
+    new BitSet(java.util.Arrays.copyOf(elems, elems.length).nn)
 
   def toImmutable: immutable.BitSet = immutable.BitSet.fromBitMask(elems)
 }
@@ -155,7 +157,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     val len = elems.length
     if (len == 0) empty
     else {
-      val a = java.util.Arrays.copyOf(elems, len)
+      val a = java.util.Arrays.copyOf(elems, len).nn
       new BitSet(a)
     }
   }
