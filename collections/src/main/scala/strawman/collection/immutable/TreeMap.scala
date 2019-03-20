@@ -7,6 +7,8 @@ import strawman.collection.mutable.{Builder, ImmutableBuilder}
 
 import scala.{Boolean, Int, math, Option, Ordering, SerialVersionUID, Serializable, Some, Unit, deprecated}
 import scala.Predef.assert
+import scala.Null
+import scala.ExplicitNulls._
 
 /** This class implements immutable maps using a tree.
   *
@@ -73,12 +75,12 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def minAfter(key: K): Option[(K, V)] = RB.minAfter(tree, key) match {
     case null => Option.empty
-    case x => Some(x.key, x.value)
+    case x => Some(x.nn.key, x.nn.value)
   }
 
   override def maxBefore(key: K): Option[(K, V)] = RB.maxBefore(tree, key) match {
     case null => Option.empty
-    case x => Some(x.key, x.value)
+    case x => Some(x.nn.key, x.nn.value)
   }
 
   override def range(from: K, until: K): TreeMap[K,V] = new TreeMap[K, V](RB.range(tree, from, until))
