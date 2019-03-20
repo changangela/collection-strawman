@@ -7,6 +7,8 @@ import strawman.collection.IterableOnce
 
 import scala.math.Ordering
 
+import scala.ExplicitNulls._
+
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>
 
@@ -414,7 +416,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends Builder[Cha
    *  @throws StringIndexOutOfBoundsException If either index is out of bounds,
    *          or if start > end.
    */
-  def substring(start: Int, end: Int): String = sb.substring(start, end)
+  def substring(start: Int, end: Int): String = sb.substring(start, end).nn
 
   /** For implementing CharSequence.
    */
