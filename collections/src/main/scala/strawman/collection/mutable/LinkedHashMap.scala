@@ -3,6 +3,8 @@ package collection
 package mutable
 
 import scala.{Unit, None, Option, Serializable, SerialVersionUID, Some, transient}
+import scala.Null
+import scala.ExplicitNulls._
 
 /** $factoryInfo
  *  @define Coll `LinkedHashMap`
@@ -27,8 +29,8 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
   final class LinkedEntry[K, V](val key: K, var value: V)
     extends HashEntry[K, LinkedEntry[K, V]]
       with Serializable {
-    var earlier: LinkedEntry[K, V] = null
-    var later: LinkedEntry[K, V] = null
+    var earlier: LinkedEntry[K, V] | Null = null
+    var later: LinkedEntry[K, V] | Null = null
   }
 
 }
@@ -62,7 +64,7 @@ class LinkedHashMap[K, V]
       def createNewEntry(key: K, value: V): Entry = {
         val e = new Entry(key, value.asInstanceOf[V])
         if (firstEntry eq null) firstEntry = e
-        else { lastEntry.later = e; e.earlier = lastEntry }
+        else { lastEntry.nn.later = e; e.earlier = lastEntry }
         lastEntry = e
         e
       }
@@ -70,8 +72,8 @@ class LinkedHashMap[K, V]
       override def foreachEntry[U](f: Entry => U): Unit = {
         var cur = firstEntry
         while (cur ne null) {
-          f(cur)
-          cur = cur.later
+          f(cur.nn)
+          cur = cur.nn.later
         }
       }
 
@@ -80,8 +82,8 @@ class LinkedHashMap[K, V]
   override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
 
-  @transient protected var firstEntry: Entry = null
-  @transient protected var lastEntry: Entry = null
+  @transient protected var firstEntry: Entry | Null = null
+  @transient protected var lastEntry: Entry | Null = null
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
@@ -102,9 +104,9 @@ class LinkedHashMap[K, V]
     if (e eq null) None
     else {
       if (e.earlier eq null) firstEntry = e.later
-      else e.earlier.later = e.later
+      else e.earlier.nn.later = e.later
       if (e.later eq null) lastEntry = e.earlier
-      else e.later.earlier = e.earlier
+      else e.later.nn.earlier = e.earlier
       e.earlier = null // Null references to prevent nepotism
       e.later = null
       Some(e.value)
@@ -119,7 +121,7 @@ class LinkedHashMap[K, V]
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
-      if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
+      if (hasNext) { val res = (cur.nn.key, cur.nn.value); cur = cur.nn.later; res }
       else Iterator.empty.next()
   }
 
@@ -134,7 +136,7 @@ class LinkedHashMap[K, V]
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
-      if (hasNext) { val res = cur.key; cur = cur.later; res }
+      if (hasNext) { val res = cur.nn.key; cur = cur.nn.later; res }
       else Iterator.empty.next()
   }
 
@@ -142,15 +144,15 @@ class LinkedHashMap[K, V]
     private var cur = firstEntry
     def hasNext = cur ne null
     def next() =
-      if (hasNext) { val res = cur.value; cur = cur.later; res }
+      if (hasNext) { val res = cur.nn.value; cur = cur.nn.later; res }
       else Iterator.empty.next()
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
-      f((cur.key, cur.value))
-      cur = cur.later
+      f((cur.nn.key, cur.nn.value))
+      cur = cur.nn.later
     }
   }
 
