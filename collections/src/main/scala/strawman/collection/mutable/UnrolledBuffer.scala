@@ -15,6 +15,8 @@ import java.lang.System
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import strawman.collection.immutable.Nil
+import scala.Null
+import scala.ExplicitNulls._
 
 /** A buffer that stores elements in an unrolled linked list.
   *
@@ -126,20 +128,20 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 
   def iterator(): Iterator[T] = new AbstractIterator[T] {
     var pos: Int = -1
-    var node: Unrolled[T] = headptr
+    var node: Unrolled[T] | Null = headptr
     scan()
 
     private def scan(): Unit = {
       pos += 1
-      while (pos >= node.size) {
+      while (pos >= node.nn.size) {
         pos = 0
-        node = node.next
+        node = node.nn.next
         if (node eq null) return
       }
     }
     def hasNext = node ne null
     def next() = if (hasNext) {
-      val r = node.array(pos)
+      val r = node.nn.array(pos)
       scan()
       r
     } else Iterator.empty.next()
@@ -245,9 +247,9 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
 
   /** Unrolled buffer node.
     */
-  class Unrolled[T: ClassTag] private[collection] (var size: Int, var array: Array[T], var next: Unrolled[T], val buff: UnrolledBuffer[T] = null) {
+  class Unrolled[T: ClassTag] private[collection] (var size: Int, var array: Array[T], var next: Unrolled[T] | Null, val buff: UnrolledBuffer[T] | Null = null) {
     private[collection] def this() = this(0, new Array[T](unrolledlength), null, null)
-    private[collection] def this(b: UnrolledBuffer[T]) = this(0, new Array[T](unrolledlength), null, b)
+    private[collection] def this(b: UnrolledBuffer[T] | Null) = this(0, new Array[T](unrolledlength), null, b)
 
     private def nextlength = if (buff eq null) unrolledlength else buff.calcNextLength(array.length)
 
@@ -258,44 +260,44 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       this
     } else {
       next = new Unrolled[T](0, new Array[T](nextlength), null, buff)
-      next append elem
+      next.nn append elem
     }
     def foreach[U](f: T => U): Unit = {
-      var unrolled = this
+      var unrolled : Unrolled[T] | Null = this
       var i = 0
       while (unrolled ne null) {
-        val chunkarr = unrolled.array
-        val chunksz = unrolled.size
+        val chunkarr = unrolled.nn.array
+        val chunksz = unrolled.nn.size
         while (i < chunksz) {
           val elem = chunkarr(i)
           f(elem)
           i += 1
         }
         i = 0
-        unrolled = unrolled.next
+        unrolled = unrolled.nn.next
       }
     }
     def mapInPlace(f: T => T): Unit = {
-      var unrolled = this
+      var unrolled: Unrolled[T] | Null = this
       var i = 0
       while (unrolled ne null) {
-        val chunkarr = unrolled.array
-        val chunksz = unrolled.size
+        val chunkarr = unrolled.nn.array
+        val chunksz = unrolled.nn.size
         while (i < chunksz) {
           val elem = chunkarr(i)
           chunkarr(i) = f(elem)
           i += 1
         }
         i = 0
-        unrolled = unrolled.next
+        unrolled = unrolled.nn.next
       }
     }
     @tailrec final def apply(idx: Int): T =
-      if (idx < size) array(idx) else next.apply(idx - size)
+      if (idx < size) array(idx) else next.nn.apply(idx - size)
     @tailrec final def update(idx: Int, newelem: T): Unit =
-      if (idx < size) array(idx) = newelem else next.update(idx - size, newelem)
+      if (idx < size) array(idx) = newelem else next.nn.update(idx - size, newelem)
     @tailrec final def locate(idx: Int): Unrolled[T] =
-      if (idx < size) this else next.locate(idx - size)
+      if (idx < size) this else next.nn.locate(idx - size)
     def prepend(elem: T) = if (size < array.length) {
       // shift the elements of the array right
       // then insert the element
@@ -329,7 +331,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         size -= 1
         if (tryMergeWithNext()) buffer.lastPtr = this
         r
-      } else next.remove(idx - size, buffer)
+      } else next.nn.remove(idx - size, buffer)
 
     @tailrec final def subtractOne(elem: T, buffer: UnrolledBuffer[T]): Unit = {
       var i = 0
@@ -340,7 +342,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         }
         i += 1
       }
-      if(next ne null) next.subtractOne(elem, buffer)
+      if(next ne null) next.nn.subtractOne(elem, buffer)
     }
 
     // shifts left elements after `leftb` (overwrites `leftb`)
@@ -352,11 +354,11 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       }
       nullout(i, i + 1)
     }
-    protected def tryMergeWithNext() = if (next != null && (size + next.size) < (array.length * waterline / waterlineDelim)) {
+    protected def tryMergeWithNext() = if (next != null && (size + next.nn.size) < (array.length * waterline / waterlineDelim)) {
       // copy the next array, then discard the next node
-      Array.copy(next.array, 0, array, size, next.size)
-      size = size + next.size
-      next = next.next
+      Array.copy(next.nn.array, 0, array, size, next.nn.size)
+      size = size + next.nn.size
+      next = next.nn.next
       if (next eq null) true else false // checks if last node was thrown out
     } else false
 
@@ -397,7 +399,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         }
         appended
       }
-      else next.insertAll(idx - size, t, buffer)
+      else next.nn.insertAll(idx - size, t, buffer)
     }
 
     private def nullout(from: Int, until: Int): Unit = {
