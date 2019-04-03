@@ -7,6 +7,9 @@ import scala.runtime.ScalaRunTime
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
 
+import scala.Null
+import scala.ExplicitNulls._
+
 import java.util.Arrays
 
 /**
@@ -122,13 +125,13 @@ object WrappedArray extends StrictOptimizedClassTagSeqFactory[WrappedArray] { se
 
   @SerialVersionUID(3L)
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] with Serializable {
-    lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
+    lazy val elemTag = ClassTag[T](array.getClass.getComponentType.nn)
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T): Unit = { array(index) = elem }
     override def hashCode = wrappedArrayHash(array)
     override def equals(that: Any) = that match {
-      case that: ofRef[_] => Arrays.equals(array.asInstanceOf[Array[AnyRef]], that.array.asInstanceOf[Array[AnyRef]])
+      case that: ofRef[_] => Arrays.equals(array.asInstanceOf[Array[AnyRef | Null]], that.array.asInstanceOf[Array[AnyRef | Null]])
       case _ => super.equals(that)
     }
   }
